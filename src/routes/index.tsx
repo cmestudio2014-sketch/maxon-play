@@ -18,7 +18,7 @@ import {
 
 const CDN = "https://www.acessocineflix.vip/wp-content/uploads";
 const LOGO = "/logo-maxonplay.svg";
-const CTA_URL = "https://go.tribopay.com.br/ooxnx";";
+const CTA_URL = "https://go.tribopay.com.br/ooxnx";
 
 const postersA = [
   "2026/01/A-Minecraft-Movie.webp",
