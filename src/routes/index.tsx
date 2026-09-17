@@ -538,6 +538,7 @@ export default function Home() {
     </a>
   </Button>
 </div>
+</section>
 {/* Footer */}
       <footer className="mx-auto max-w-6xl px-4 py-14">
         <div className="grid gap-10 md:grid-cols-3">
