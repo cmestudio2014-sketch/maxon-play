@@ -517,24 +517,27 @@ export default function Home() {
             ))}
           </Accordion>
           <div className="mt-10 rounded-2xl border border-border bg-card p-6 text-center">
-            <h3 className="text-xl font-bold">Não encontrou a sua dúvida?</h3>
-            <p className="mt-2 text-muted-foreground">
-              Nossa equipe está à disposição para tirar a sua dúvida! Fale
-              diretamente conosco clicando no botão abaixo.
-            </p>
-            <Button
-              asChild
-              className="mt-5 rounded-full font-bold uppercase"
-              variant="secondary"
-            >
-              <a
-  href="https://wa.me/553175319525?text=Ol%C3%A1%21%20%F0%9F%91%8B%20Seja%20bem-vindo%20ao%20suporte%20MAXON%20PLAY.%0A%0APara%20configurarmos%20seu%20acesso%2C%20informe%20por%20favor%3A%0A%0A%F0%9F%93%BA%20Qual%20%C3%A9%20a%20marca%20e%20o%20modelo%20do%20seu%20aparelho%3F%0A%0A%E2%9A%99%EF%B8%8F%20Qual%20sistema%20ele%20utiliza%3F%20%28Android%20TV%2C%20Samsung%2C%20LG%2C%20Fire%20TV%2C%20TV%20Box%2C%20celular%20etc.%29%0A%0A%F0%9F%93%B1%20Voc%C3%AA%20j%C3%A1%20possui%20algum%20aplicativo%20de%20reprodu%C3%A7%C3%A3o%20instalado%3F%0A%0ACaso%20ainda%20n%C3%A3o%20tenha%2C%20verifique%20se%20consegue%20instalar%20um%20destes%3A%0A%0A%E2%80%A2%20IPTV%20Smarters%20Pro%0A%E2%80%A2%20IBO%20Player%0A%E2%80%A2%20XCIPTV%0A%0ADepois%20nos%20informe%20qual%20aplicativo%20instalou%20para%20continuarmos%20a%20configura%C3%A7%C3%A3o.%20%F0%9F%98%8A"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  Falar com suporte
-</a>
-</Button>      
+  <h3 className="text-xl font-bold">Não encontrou a sua dúvida?</h3>
+
+  <p className="mt-2 text-muted-foreground">
+    Nossa equipe está à disposição para tirar a sua dúvida! Fale
+    diretamente conosco clicando no botão abaixo.
+  </p>
+
+  <Button
+    asChild
+    className="mt-5 rounded-full font-bold uppercase"
+    variant="secondary"
+  >
+    <a
+      href="https://wa.me/553175319525?text=Ol%C3%A1%21%20%F0%9F%91%8B%20Seja%20bem-vindo%20ao%20suporte%20MAXON%20PLAY.%0A%0APara%20configurarmos%20seu%20acesso%2C%20informe%20por%20favor%3A%0A%0A%F0%9F%93%BA%20Qual%20%C3%A9%20a%20marca%20e%20o%20modelo%20do%20seu%20aparelho%3F%0A%0A%E2%9A%99%EF%B8%8F%20Qual%20sistema%20ele%20utiliza%3F%20%28Android%20TV%2C%20Samsung%2C%20LG%2C%20Fire%20TV%2C%20TV%20Box%2C%20celular%20etc.%29%0A%0A%F0%9F%93%B1%20Voc%C3%AA%20j%C3%A1%20possui%20algum%20aplicativo%20de%20reprodu%C3%A7%C3%A3o%20instalado%3F%0A%0ACaso%20ainda%20n%C3%A3o%20tenha%2C%20verifique%20se%20consegue%20instalar%20um%20destes%3A%0A%0A%E2%80%A2%20IPTV%20Smarters%20Pro%0A%E2%80%A2%20IBO%20Player%0A%E2%80%A2%20XCIPTV%0A%0ADepois%20nos%20informe%20qual%20aplicativo%20instalou%20para%20continuarmos%20a%20configura%C3%A7%C3%A3o.%20%F0%9F%98%8A"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Falar com suporte
+    </a>
+  </Button>
+</div>
 {/* Footer */}
       <footer className="mx-auto max-w-6xl px-4 py-14">
         <div className="grid gap-10 md:grid-cols-3">
