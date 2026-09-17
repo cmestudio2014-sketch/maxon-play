@@ -18,7 +18,7 @@ import {
 
 const CDN = "https://www.acessocineflix.vip/wp-content/uploads";
 const LOGO = "/logo-maxonplay.svg";
-const CTA_URL = "https://go.tribopay.com.br/sok63sercg";
+const CTA_URL = "https://go.tribopay.com.br/ooxnx";";
 
 const postersA = [
   "2026/01/A-Minecraft-Movie.webp",
@@ -122,7 +122,7 @@ const planos = [
     sub: "",
     preco: "R$ 90,00",
     obs: "Pagamento único anual",
-    link: "https://go.tribopay.com.br/sok63sercg",
+    link: "https://go.tribopay.com.br/ooxnx",
     destaque: true,
   },
   {
