@@ -130,7 +130,7 @@ const planos = [
     sub: "",
     preco: "R$ 30,00",
     obs: "Acesso por 30 dias",
-    link: CTA_URL,
+    link: "https://go.tribopay.com.br/h2fze",
     destaque: false,
   },
 ];
