@@ -57,7 +57,7 @@ export default function Player() {
     setStatus("Carregando lista...");
 
     try {
-      const response = await fetch(url);
+      const response = await fetch("/api/playlist");
 
       if (!response.ok) {
         throw new Error("Não foi possível acessar a lista.");
