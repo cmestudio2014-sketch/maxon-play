@@ -218,16 +218,11 @@ export default function Home() {
           <p className="text-center text-sm font-semibold uppercase tracking-wide">
             Clique no botão abaixo para renovar seu plano
           </p>
-          <Button asChild className="rounded-full font-bold uppercase">
-            <a href={CTA_URL}>
-              &nbsp;
-              <br />
-              promoção
-              <br />
-              &nbsp;<strong>AGORA</strong>
-            </a>
-          </Button>
-        </div>
+<Button asChild className="rounded-full font-bold uppercase">
+<a href="/player">
+▶ WEB PLAYER
+</a>
+</Button>        </div>
       </div>
 
       {/* Hero */}
