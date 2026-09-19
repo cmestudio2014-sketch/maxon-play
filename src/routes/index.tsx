@@ -218,11 +218,10 @@ export default function Home() {
           <p className="text-center text-sm font-semibold uppercase tracking-wide">
             Clique no botão abaixo para renovar seu plano
           </p>
-<Button asChild className="rounded-full font-bold uppercase">
-<a href="/player">
-▶ WEB PLAYER
-</a>
-</Button>        </div>
+<div className="flex gap-2">
+<Button asChild variant="outline" className="rounded-full font-bold uppercase"><a href="/cliente">Área do Cliente</a></Button>
+<Button asChild className="rounded-full font-bold uppercase"><a href="/player">▶ Web Player</a></Button>
+</div>        </div>
       </div>
 
       {/* Hero */}
@@ -587,4 +586,3 @@ export default function Home() {
     </div>
   );
 }
-

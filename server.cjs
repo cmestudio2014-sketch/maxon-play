@@ -1,69 +1,18 @@
-const http = require("http");
-const { spawn } = require("child_process");
-
-const PORT = Number(process.env.PORT || 80);
-const VITE_PORT = 4173;
-
-const vite = process.platform === "win32"
-  ? "node_modules\\.bin\\vite.cmd"
-  : "node_modules/.bin/vite";
-
-const child = spawn(
-  vite,
-  ["--host", "127.0.0.1", "--port", String(VITE_PORT)],
-  { stdio: "inherit" }
-);
-
-const server = http.createServer(async (req, res) => {
-
-  if (req.url === "/api/playlist") {
-    try {
-      const url = process.env.IPTV_PLAYLIST_URL;
-
-      if (!url) {
-        res.writeHead(500, {"Content-Type":"text/plain"});
-        return res.end("IPTV_PLAYLIST_URL nao configurada");
-      }
-
-      const resposta = await fetch(url);
-      const texto = await resposta.text();
-
-      res.writeHead(200, {
-        "Content-Type": "application/vnd.apple.mpegurl",
-        "Cache-Control": "no-store"
-      });
-
-      return res.end(texto);
-
-    } catch (erro) {
-      console.error(erro);
-      res.writeHead(502, {"Content-Type":"text/plain"});
-      return res.end("Erro ao carregar playlist");
-    }
-  }
-
-  const proxy = http.request({
-    hostname: "127.0.0.1",
-    port: VITE_PORT,
-    path: req.url,
-    method: req.method,
-    headers: req.headers
-  }, resposta => {
-    res.writeHead(resposta.statusCode || 500, resposta.headers);
-    resposta.pipe(res);
-  });
-
-  proxy.on("error", () => {
-    res.writeHead(503);
-    res.end("MAXON PLAY iniciando...");
-  });
-
-  req.pipe(proxy);
-});
-
-server.listen(PORT, "0.0.0.0", () => {
-  console.log("MAXON PLAY porta " + PORT);
-});
-
-child.on("exit", code => process.exit(code ?? 0));
-process.on("SIGTERM", () => child.kill("SIGTERM"));
+const http=require("http"),{spawn}=require("child_process"),{createHmac,randomBytes,scryptSync,timingSafeEqual}=require("crypto"),{existsSync,mkdirSync,readFileSync,writeFileSync}=require("fs"),path=require("path");
+const PORT=Number(process.env.PORT||80),VITE_PORT=4173,DATA_DIR=process.env.DATA_DIR||path.join(__dirname,"data"),DB_FILE=path.join(DATA_DIR,"panel-db.json"),SECRET=process.env.SESSION_SECRET||randomBytes(32).toString("hex"),ADMIN_USER=process.env.ADMIN_USER||"admin",ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||"";
+mkdirSync(DATA_DIR,{recursive:true});if(!existsSync(DB_FILE))writeFileSync(DB_FILE,JSON.stringify({clients:[]},null,2));
+const dbRead=()=>{try{return JSON.parse(readFileSync(DB_FILE,"utf8"))}catch{return{clients:[]}}},dbWrite=db=>writeFileSync(DB_FILE,JSON.stringify(db,null,2));
+function hash(p,s=randomBytes(16).toString("hex")){return`${s}:${scryptSync(p,s,64).toString("hex")}`}function verify(p,v=""){const[s,h]=v.split(":");if(!s||!h)return false;const a=scryptSync(p,s,64),e=Buffer.from(h,"hex");return a.length===e.length&&timingSafeEqual(a,e)}
+function token(v){const b=Buffer.from(JSON.stringify(v)).toString("base64url");return`${b}.${createHmac("sha256",SECRET).update(b).digest("base64url")}`}function session(req){const t=(req.headers.cookie||"").split(";").map(x=>x.trim()).find(x=>x.startsWith("maxon_session="))?.slice(14);if(!t)return null;const[b,s]=t.split("."),e=createHmac("sha256",SECRET).update(b||"").digest("base64url");if(!s||s.length!==e.length||!timingSafeEqual(Buffer.from(s),Buffer.from(e)))return null;try{const v=JSON.parse(Buffer.from(b,"base64url").toString());return v.exp>Date.now()?v:null}catch{return null}}
+function json(res,status,value,headers={}){res.writeHead(status,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store",...headers});res.end(JSON.stringify(value))}async function body(req){let raw="";for await(const c of req){raw+=c;if(raw.length>1e6)throw Error("large")}return raw?JSON.parse(raw):{}}
+const mac=(v="")=>v.replace(/[^a-fA-F0-9]/g,"").toUpperCase(),safe=c=>{const{passwordHash,sourceUrl,...v}=c;return{...v,hasSource:Boolean(sourceUrl)}},active=c=>c.status==="active"&&new Date(c.expiresAt).getTime()>=Date.now(),key=()=>randomBytes(6).toString("hex").toUpperCase();
+async function api(req,res){const u=new URL(req.url,`http://${req.headers.host||"localhost"}`),s=session(req);
+ if(u.pathname==="/api/health")return json(res,200,{ok:true});
+ if(u.pathname==="/api/playlist"&&req.method==="GET"){const source=process.env.IPTV_PLAYLIST_URL;if(!source)return json(res,503,{error:"IPTV_PLAYLIST_URL não configurada."});try{const upstream=await fetch(source);if(!upstream.ok)throw Error("upstream");res.writeHead(200,{"Content-Type":"application/vnd.apple.mpegurl","Cache-Control":"no-store"});return res.end(await upstream.text())}catch{return json(res,502,{error:"Não foi possível carregar a fonte autorizada."})}}
+ if(u.pathname==="/api/auth/admin"&&req.method==="POST"){const d=await body(req);if(!ADMIN_PASSWORD)return json(res,503,{error:"Configure ADMIN_PASSWORD na hospedagem."});if(d.username!==ADMIN_USER||d.password!==ADMIN_PASSWORD)return json(res,401,{error:"Usuário ou senha inválidos."});return json(res,200,{ok:true},{"Set-Cookie":`maxon_session=${token({role:"admin",exp:Date.now()+288e5})}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800`})}
+ if(u.pathname==="/api/auth/client"&&req.method==="POST"){const d=await body(req),db=dbRead(),c=d.mode==="device"?db.clients.find(x=>mac(x.mac)===mac(d.mac)&&x.key===String(d.key||"").toUpperCase()):db.clients.find(x=>x.username.toLowerCase()===String(d.username||"").toLowerCase()&&verify(String(d.password||""),x.passwordHash));if(!c||!active(c))return json(res,401,{error:"Acesso inválido, bloqueado ou vencido."});c.lastAccessAt=new Date().toISOString();dbWrite(db);return json(res,200,{client:safe(c)},{"Set-Cookie":`maxon_session=${token({role:"client",clientId:c.id,exp:Date.now()+864e5})}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400`})}
+ if(u.pathname==="/api/auth/logout"&&req.method==="POST")return json(res,200,{ok:true},{"Set-Cookie":"maxon_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"});
+ if(u.pathname==="/api/client/me"&&req.method==="GET"){if(s?.role!=="client")return json(res,401,{error:"Não autorizado."});const c=dbRead().clients.find(x=>x.id===s.clientId);return!c||!active(c)?json(res,403,{error:"Acesso bloqueado ou vencido."}):json(res,200,{client:safe(c)})}
+ if(u.pathname==="/api/admin/clients"){if(s?.role!=="admin")return json(res,401,{error:"Não autorizado."});const db=dbRead();if(req.method==="GET")return json(res,200,{clients:db.clients.map(safe)});if(req.method==="POST"){const d=await body(req);if(!d.name||!d.username||!d.password||!d.expiresAt)return json(res,400,{error:"Preencha nome, usuário, senha e vencimento."});if(db.clients.some(c=>c.username.toLowerCase()===String(d.username).toLowerCase()))return json(res,409,{error:"Esse usuário já existe."});const c={id:randomBytes(12).toString("hex"),name:String(d.name),username:String(d.username).trim(),passwordHash:hash(String(d.password)),mac:mac(d.mac),key:String(d.key||key()).toUpperCase(),expiresAt:new Date(d.expiresAt).toISOString(),status:"active",maxDevices:Number(d.maxDevices||1),sourceUrl:String(d.sourceUrl||""),notes:String(d.notes||""),createdAt:new Date().toISOString(),lastAccessAt:null};db.clients.unshift(c);dbWrite(db);return json(res,201,{client:safe(c)})}}
+ const m=u.pathname.match(/^\/api\/admin\/clients\/([a-f0-9]+)$/);if(m&&req.method==="PATCH"){if(s?.role!=="admin")return json(res,401,{error:"Não autorizado."});const db=dbRead(),c=db.clients.find(x=>x.id===m[1]);if(!c)return json(res,404,{error:"Cliente não encontrado."});const d=await body(req);for(const k of["name","username","status","notes","sourceUrl"])if(d[k]!==undefined)c[k]=String(d[k]);if(d.password)c.passwordHash=hash(String(d.password));if(d.mac!==undefined)c.mac=mac(d.mac);if(d.key!==undefined)c.key=String(d.key).toUpperCase();if(d.expiresAt)c.expiresAt=new Date(d.expiresAt).toISOString();if(d.maxDevices)c.maxDevices=Number(d.maxDevices);dbWrite(db);return json(res,200,{client:safe(c)})}return json(res,404,{error:"Rota não encontrada."})}
+const vite=process.platform==="win32"?"node_modules\\.bin\\vite.cmd":"node_modules/.bin/vite",child=spawn(vite,["--host","127.0.0.1","--port",String(VITE_PORT)],{stdio:"inherit"}),server=http.createServer(async(req,res)=>{try{if(req.url.startsWith("/api/"))return await api(req,res);const p=http.request({hostname:"127.0.0.1",port:VITE_PORT,path:req.url,method:req.method,headers:req.headers},r=>{res.writeHead(r.statusCode||500,r.headers);r.pipe(res)});p.on("error",()=>{res.writeHead(503);res.end("MAXON PLAY iniciando...")});req.pipe(p)}catch(e){console.error(e);json(res,500,{error:"Erro interno do servidor."})}});server.listen(PORT,"0.0.0.0",()=>console.log(`MAXON PLAY porta ${PORT}`));child.on("exit",c=>process.exit(c??0));process.on("SIGTERM",()=>child.kill("SIGTERM"));
