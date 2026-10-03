@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info: { title: MAXON PLAY Device API, version: 1.0.0, description: "Ativação de dispositivos e entrega de fonte autorizada. Sem conteúdo embutido." }
+servers: [{ url: "https://maxonplay.squareweb.app/api/v1" }]
+components:
+  securitySchemes: { bearer: { type: http, scheme: bearer, bearerFormat: JWT } }
+  schemas:
+    Error: { type: object, properties: { ok: { type: boolean, example: false }, error: { type: object, properties: { code: { type: string }, message: { type: string } } } } }
+    Status:
+      type: object
+      properties:
+        device_id: { type: string, example: "A1:B2:C3:D4:E5:F6" }
+        status: { type: string, enum: [nao_ativado, ativo, expirado, bloqueado] }
+        expires_at: { type: string, format: date-time, nullable: true }
+        plan: { type: string, nullable: true }
+        config_version: { type: string, example: "none" }
+        token: { type: string, description: "JWT 15 min (register/heartbeat)" }
+    Source:
+      nullable: true
+      oneOf:
+        - { type: object, properties: { type: { type: string, enum: [m3u] }, m3u_url: { type: string }, epg_url: { type: string } } }
+        - { type: object, properties: { type: { type: string, enum: [xtream] }, server: { type: string }, username: { type: string }, password: { type: string } } }
+    Ok:
+      type: object
+      properties: { ok: { type: boolean, example: true }, data: { $ref: "#/components/schemas/Status" } }
+paths:
+  /device/register:
+    post:
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [device_uid, platform], properties: { device_uid: { type: string, minLength: 8, maxLength: 128 }, platform: { type: string, enum: [android, tizen, web] }, model: { type: string }, app_version: { type: string } } } } } }
+      responses: { "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Ok" } } } }, "400": { description: Validação, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }, "429": { description: Rate limit } }
+  /activation/validate:
+    post:
+      security: [{ bearer: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [key], properties: { key: { type: string, example: "XXXX-XXXX-XXXX-XXXX" } } } } } }
+      responses: { "200": { description: KEY utilizável }, "404": { description: KEY_INVALID }, "409": { description: KEY_IN_USE } }
+  /activation/activate:
+    post:
+      security: [{ bearer: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [key], properties: { key: { type: string } } } } } }
+      responses: { "200": { description: Ativado, content: { application/json: { schema: { $ref: "#/components/schemas/Ok" } } } }, "403": { description: KEY_BLOCKED/KEY_EXPIRED }, "409": { description: KEY_IN_USE } }
+  /device/status:
+    get: { security: [{ bearer: [] }], responses: { "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Ok" } } } }, "401": { description: Token inválido } } }
+  /device/heartbeat:
+    post: { security: [{ bearer: [] }], responses: { "200": { description: OK + novo token, content: { application/json: { schema: { $ref: "#/components/schemas/Ok" } } } } } }
+  /device/config:
+    get:
+      security: [{ bearer: [] }]
+      responses:
+        "200": { description: Fonte atribuída, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, data: { type: object, properties: { config_version: { type: string }, source: { $ref: "#/components/schemas/Source" } } } } } } } }
+        "403": { description: LICENSE_INACTIVE }

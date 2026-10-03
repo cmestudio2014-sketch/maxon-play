@@ -10,7 +10,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-data/
 .output
 .vinxi
 .tanstack/**
@@ -31,3 +30,9 @@ data/
 *.njsproj
 *.sln
 *.sw?
+
+# MAXON PLAY
+.env
+.env.*
+!.env.example
+.data/

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Estado de foco bem visível para navegação por controle remoto -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape><solid android:color="#FFF5A524" /><corners android:radius="14dp" /></shape>
+    </item>
+    <item>
+        <shape><solid android:color="#FF262B36" /><corners android:radius="14dp" /></shape>
+    </item>
+</selector>

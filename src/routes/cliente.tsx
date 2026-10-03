@@ -1,10 +1,114 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FormEvent, useEffect, useState } from "react";
-import { KeyRound, LogOut, MonitorSmartphone, ShieldCheck, UserRound } from "lucide-react";
+import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-export const Route=createFileRoute("/cliente")({component:ClientArea});
-type Client={name:string;username:string;mac:string;key:string;expiresAt:string;status:string;maxDevices:number;hasSource:boolean};
-export default function ClientArea(){const[mode,setMode]=useState<"account"|"device">("account"),[form,setForm]=useState({username:"",password:"",mac:"",key:""}),[client,setClient]=useState<Client|null>(null),[message,setMessage]=useState("");useEffect(()=>{fetch("/api/client/me").then(r=>r.ok?r.json():null).then(v=>v&&setClient(v.client))},[]);async function login(e:FormEvent){e.preventDefault();setMessage("Entrando...");const r=await fetch("/api/auth/client",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,mode})}),d=await r.json();if(!r.ok)return setMessage(d.error);setClient(d.client);setMessage("")}async function logout(){await fetch("/api/auth/logout",{method:"POST"});setClient(null)}
-if(client)return <div className="panel-page"><header className="panel-header"><a href="/"><img src="/logo-maxonplay.svg"/></a><Button variant="outline" onClick={logout}><LogOut/> Sair</Button></header><main className="panel-shell"><p className="panel-kicker">ÁREA DO CLIENTE</p><h1>Olá, {client.name}</h1><p className="panel-muted">Seu acesso MAXON PLAY em um só lugar.</p><div className="panel-grid"><article className="panel-card"><ShieldCheck/><span>Status</span><strong className="status-active">ATIVO</strong></article><article className="panel-card"><KeyRound/><span>Vencimento</span><strong>{new Date(client.expiresAt).toLocaleDateString("pt-BR")}</strong></article><article className="panel-card"><MonitorSmartphone/><span>Dispositivos</span><strong>Até {client.maxDevices}</strong></article></div><section className="panel-card panel-details"><h2>Dados do aparelho</h2><div><span>MAC cadastrado</span><strong>{client.mac||"Ainda não vinculado"}</strong></div><div><span>Key</span><strong>{client.key}</strong></div><div><span>Fonte autorizada</span><strong>{client.hasSource?"Configurada":"Aguardando configuração"}</strong></div></section><div className="panel-actions"><Button asChild size="lg"><a href="/player">Abrir Web Player</a></Button><Button asChild size="lg" variant="outline"><a href="https://wa.me/553175319525">Falar com suporte</a></Button></div></main></div>;
-return <div className="panel-page panel-centered"><main className="login-card"><a href="/"><img className="login-logo" src="/logo-maxonplay.svg"/></a><p className="panel-kicker">ÁREA DO CLIENTE</p><h1>Entre no MAXON PLAY</h1><div className="login-tabs"><button className={mode==="account"?"active":""} onClick={()=>setMode("account")}><UserRound/> Usuário e senha</button><button className={mode==="device"?"active":""} onClick={()=>setMode("device")}><MonitorSmartphone/> MAC e Key</button></div><form onSubmit={login}>{mode==="account"?<><label>Usuário</label><Input value={form.username} onChange={e=>setForm({...form,username:e.target.value})} required/><label>Senha</label><Input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required/></>:<><label>MAC do aparelho</label><Input placeholder="00:00:00:00:00:00" value={form.mac} onChange={e=>setForm({...form,mac:e.target.value})} required/><label>Key de ativação</label><Input value={form.key} onChange={e=>setForm({...form,key:e.target.value.toUpperCase()})} required/></>}<Button className="w-full" size="lg">Entrar</Button>{message&&<p className="form-message">{message}</p>}</form><a className="back-link" href="/">← Voltar para o site</a></main></div>}
+import { SiteFooter, SiteHeader, fmtDate, fmtDateTime } from "@/components/brand";
+import { lookupLicense } from "@/lib/public.functions";
+
+export const Route = createFileRoute("/cliente")({
+  head: () => ({
+    meta: [
+      { title: "Minha conta — MAXON PLAY" },
+      {
+        name: "description",
+        content: "Consulte a validade do seu plano e o dispositivo vinculado à sua KEY.",
+      },
+      { property: "og:title", content: "Minha conta MAXON PLAY" },
+      { property: "og:description", content: "Consulte validade e dispositivo." },
+    ],
+  }),
+  component: Cliente,
+});
+
+type License = {
+  key: string;
+  plan: string;
+  status: string;
+  expires_at: string | null;
+  customer: string | null;
+  device: {
+    id: string;
+    platform: string | null;
+    model: string | null;
+    last_seen_at: string | null;
+  } | null;
+};
+
+function Cliente() {
+  const lookup = useServerFn(lookupLicense);
+  const [key, setKey] = useState("");
+  const [lic, setLic] = useState<License | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await lookup({ data: { key } });
+      if (r.ok) setLic(r.license as License);
+      else {
+        setLic(null);
+        setErr(r.error);
+      }
+    } catch {
+      setErr("Verifique a KEY digitada.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="min-h-screen bg-hero">
+      <SiteHeader />
+      <main className="mx-auto max-w-2xl px-4 py-16">
+        <h1 className="text-4xl font-extrabold">Minha conta</h1>
+        <p className="mt-2 text-muted-foreground">
+          Digite sua KEY para ver a validade e o aparelho vinculado.
+        </p>
+        <form onSubmit={submit} className="mt-8 flex gap-2">
+          <Input
+            value={key}
+            onChange={(e) => setKey(e.target.value.toUpperCase())}
+            placeholder="XXXX-XXXX-XXXX-XXXX"
+            className="h-12 font-mono"
+          />
+          <Button type="submit" variant="hero" size="lg" disabled={busy || key.length < 16}>
+            Consultar
+          </Button>
+        </form>
+        {err && <p className="mt-4 text-destructive">{err}</p>}
+        {lic && (
+          <div className="mt-8 space-y-4 rounded-3xl border border-border bg-card p-8">
+            {lic.customer && (
+              <p className="text-lg">
+                Olá, <b>{lic.customer}</b>
+              </p>
+            )}
+            <Row k="KEY" v={lic.key} />
+            <Row k="Plano" v={lic.plan} />
+            <Row k="Status" v={lic.status} />
+            <Row k="Válido até" v={fmtDate(lic.expires_at)} />
+            <hr className="border-border" />
+            {lic.device ? (
+              <>
+                <Row k="Dispositivo" v={lic.device.id} />
+                <Row k="Plataforma" v={`${lic.device.platform ?? ""} ${lic.device.model ?? ""}`} />
+                <Row k="Última conexão" v={fmtDateTime(lic.device.last_seen_at)} />
+              </>
+            ) : (
+              <p className="text-muted-foreground">Nenhum dispositivo vinculado ainda.</p>
+            )}
+          </div>
+        )}
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
+const Row = ({ k, v }: { k: string; v: string }) => (
+  <div className="flex justify-between gap-4">
+    <span className="text-muted-foreground">{k}</span>
+    <span className="font-medium">{v}</span>
+  </div>
+);

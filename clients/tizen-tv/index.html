@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1920, height=1080" />
+  <title>MAXON PLAY</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="$WEBAPIS/webapis/webapis.js"></script>
+</head>
+<body>
+  <header><div class="logo"><span class="mark">▶</span> MAXON <b>PLAY</b></div><div id="net"></div></header>
+
+  <section id="activation" class="screen hidden">
+    <p class="label">MAC / Device ID</p>
+    <p id="deviceId" class="device-id">…</p>
+    <p id="actStatus" class="muted"></p>
+    <input id="keyInput" class="focusable key" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" />
+    <button id="activateBtn" class="focusable btn">Ativar</button>
+    <p id="actError" class="error"></p>
+  </section>
+
+  <section id="home" class="screen hidden">
+    <nav id="tabs">
+      <button class="focusable tab" data-tab="live">Live TV</button>
+      <button class="focusable tab" data-tab="movie">Filmes</button>
+      <button class="focusable tab" data-tab="series">Séries</button>
+      <button class="focusable tab" data-tab="fav">Favoritos</button>
+      <button class="focusable tab" data-tab="search">Busca</button>
+      <button class="focusable tab" data-tab="settings">Configurações</button>
+    </nav>
+    <input id="search" class="focusable hidden" placeholder="Buscar…" />
+    <div id="grid"></div>
+    <div id="settings" class="hidden">
+      <p id="info" class="muted"></p>
+      <div id="manual">
+        <p>Adicionar lista autorizada manualmente (M3U):</p>
+        <input id="manualUrl" class="focusable" placeholder="https://…/lista.m3u" />
+        <button id="manualSave" class="focusable btn">Salvar</button>
+      </div>
+      <button id="syncNow" class="focusable btn">Sincronizar agora</button>
+    </div>
+  </section>
+
+  <div id="player" class="hidden"><object id="av-player" type="application/avplayer"></object><video id="html5" class="hidden"></video><p id="nowPlaying"></p></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/device.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/playlist.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

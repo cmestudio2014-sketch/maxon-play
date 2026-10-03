@@ -1,18 +1,192 @@
-import {FormEvent,useEffect,useMemo,useState} from "react";
-import {LayoutDashboard,Users,UserPlus,Wallet,CreditCard,Headphones,Settings,PlaySquare,Globe2,Package,Ticket,FileDown,Search,Plus,RefreshCw,Ban,CheckCircle2,Menu,X} from "lucide-react";
-import {Button} from "@/components/ui/button";import{Input}from"@/components/ui/input";
-type Client={id:string;name:string;username:string;mac:string;key:string;expiresAt:string;status:string;maxDevices:number;lastAccessAt:string|null;hasSource:boolean};
-const initial={name:"",username:"",password:"",mac:"",expiresAt:"",maxDevices:"1",sourceUrl:"",notes:""};
-const items=[[LayoutDashboard,"Dashboard"],[Users,"Clientes"],[UserPlus,"Novo Cliente"],[Wallet,"Financeiro"],[CreditCard,"Planos"],[Package,"Pacotes"],[Ticket,"Cupons"],[Headphones,"Suporte"],[PlaySquare,"Web Player"],[Globe2,"DNS & Domínios"],[FileDown,"Importar / Exportar"],[Settings,"Configurações"]] as const;
-export default function AdminArea(){const[logged,setLogged]=useState(false),[clients,setClients]=useState<Client[]>([]),[message,setMessage]=useState(""),[search,setSearch]=useState(""),[login,setLogin]=useState({username:"admin",password:""}),[form,setForm]=useState(initial),[view,setView]=useState("Dashboard"),[mobile,setMobile]=useState(false);
-async function load(){const r=await fetch("/api/admin/clients");if(r.ok){setLogged(true);setClients((await r.json()).clients)}}useEffect(()=>{load()},[]);
-async function signIn(e:FormEvent){e.preventDefault();const r=await fetch("/api/auth/admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(login)}),d=await r.json();if(!r.ok)return setMessage(d.error);setMessage("");load()}
-async function create(e:FormEvent){e.preventDefault();const r=await fetch("/api/admin/clients",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)}),d=await r.json();if(!r.ok)return setMessage(d.error);setForm(initial);setMessage("Cliente criado com sucesso.");setView("Clientes");load()}
-async function update(id:string,changes:Record<string,unknown>){const r=await fetch(`/api/admin/clients/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(changes)});if(r.ok)load()}
-if(!logged)return <div className="mx-login"><form onSubmit={signIn}><img src="/logo-maxonplay.svg"/><small>PAINEL ADMINISTRATIVO</small><h1>Entrar no MAXON PLAY</h1><label>Usuário</label><Input value={login.username} onChange={e=>setLogin({...login,username:e.target.value})}/><label>Senha</label><Input type="password" value={login.password} onChange={e=>setLogin({...login,password:e.target.value})}/><Button>Entrar</Button>{message&&<p>{message}</p>}</form></div>;
-const now=Date.now(),active=clients.filter(c=>c.status==="active"&&new Date(c.expiresAt).getTime()>=now).length,expired=clients.length-active,due=clients.filter(c=>{const d=new Date(c.expiresAt).getTime()-now;return d>=0&&d<7*864e5}).length;const visible=clients.filter(c=>`${c.name} ${c.username} ${c.mac}`.toLowerCase().includes(search.toLowerCase()));
-const Content=()=>{if(view==="Novo Cliente")return <form className="mx-card mx-form" onSubmit={create}><h2>Novo cliente</h2><div className="mx-formgrid"><label>Nome<Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required/></label><label>Usuário<Input value={form.username} onChange={e=>setForm({...form,username:e.target.value})} required/></label><label>Senha<Input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required/></label><label>MAC<Input value={form.mac} onChange={e=>setForm({...form,mac:e.target.value})}/></label><label>Vencimento<Input type="date" value={form.expiresAt} onChange={e=>setForm({...form,expiresAt:e.target.value})} required/></label><label>Telas<Input type="number" min="1" value={form.maxDevices} onChange={e=>setForm({...form,maxDevices:e.target.value})}/></label></div><Button><Plus/>Cadastrar cliente</Button>{message&&<p>{message}</p>}</form>;
-if(view==="Clientes")return <><div className="mx-search"><Search/><Input placeholder="Buscar cliente, usuário ou MAC" value={search} onChange={e=>setSearch(e.target.value)}/><Button onClick={()=>setView("Novo Cliente")}><Plus/>Novo</Button></div><div className="mx-table"><div className="mx-tr mx-th"><b>Cliente</b><b>Vencimento</b><b>Status</b><b>Ações</b></div>{visible.map(c=><div className="mx-tr" key={c.id}><div><b>{c.name}</b><small>@{c.username} · {c.mac||"sem MAC"}</small></div><span>{new Date(c.expiresAt).toLocaleDateString("pt-BR")}</span><span className={c.status==="active"?"mx-ok":"mx-off"}>{c.status==="active"?"Ativo":"Bloqueado"}</span><div className="mx-actions"><button onClick={()=>{const d=new Date(c.expiresAt);d.setDate(d.getDate()+30);update(c.id,{expiresAt:d.toISOString()})}}><RefreshCw/>+30</button><button onClick={()=>update(c.id,{status:c.status==="active"?"blocked":"active"})}>{c.status==="active"?<Ban/>:<CheckCircle2/>}</button></div></div>)}</div>;
-if(view!=="Dashboard")return <div className="mx-card mx-empty"><h2>{view}</h2><p>Módulo preparado para integração ao MAXON PLAY.</p></div>;
-return <><div className="mx-stats"><div><small>SALDO</small><strong>R$ 0,00</strong><span>Disponível</span></div><div><small>VENDAS HOJE</small><strong>R$ 0,00</strong><span>0 vendas</span></div><div><small>ESTE MÊS</small><strong>R$ 0,00</strong><span>0 vendas</span></div></div><div className="mx-card"><div className="mx-cardtitle"><b>Mais vendidos</b><span>Dia&nbsp;&nbsp; Mês&nbsp;&nbsp; Ano</span></div><div className="mx-chart"><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/></div></div><div className="mx-panels"><section><h3>Clientes - Assinaturas</h3><div><b>{active}</b><small>ATIVOS</small><b>{expired}</b><small>INATIVOS</small><b>{clients.length}</b><small>TOTAL</small><b>{due}</b><small>A VENCER</small></div></section><section><h3>Revendas - Assinaturas</h3><div><b>0</b><small>ATIVOS</small><b>0</b><small>INATIVOS</small><b>0</b><small>TOTAL</small><b>0</b><small>A VENCER</small></div></section></div></>};
-return <div className="mx-admin"><aside className={mobile?"open":""}><div className="mx-brand"><img src="/logo-maxonplay.svg"/><button onClick={()=>setMobile(false)}><X/></button></div><div className="mx-user">M<div><b>MAXON PLAY</b><small>Administrador</small></div></div><nav>{items.map(([I,n])=><button className={view===n?"active":""} key={n} onClick={()=>{setView(n);setMobile(false)}}><I/>{n}</button>)}</nav></aside><main><header><button className="mx-menubtn" onClick={()=>setMobile(true)}><Menu/></button><div><small>PAINEL ADMINISTRATIVO</small><h1>{view}</h1></div><span className="mx-online">● Online</span></header><Content/></main></div>}
+import { createFileRoute, Link, Outlet, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import {
+  BarChart3,
+  Users,
+  MonitorSmartphone,
+  KeyRound,
+  ListVideo,
+  Tag,
+  ShoppingCart,
+  Ticket,
+  UserCog,
+  Settings,
+  ScrollText,
+  LogOut,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/brand";
+import { Field, friendly } from "@/components/admin-ui";
+import { getSession, login, logout, setupFirstAdmin } from "@/lib/admin.functions";
+
+export const Route = createFileRoute("/admin")({
+  head: () => ({
+    meta: [
+      { title: "Painel — MAXON PLAY" },
+      { name: "description", content: "Painel administrativo e de vendas MAXON PLAY." },
+      { property: "og:title", content: "Painel MAXON PLAY" },
+      { property: "og:description", content: "Gestão de clientes, ativações e vendas." },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+  loader: () => getSession(),
+  component: AdminLayout,
+  errorComponent: ({ error }) => (
+    <div className="p-10 text-center text-destructive">{friendly(error)}</div>
+  ),
+  notFoundComponent: () => <div className="p-10 text-center">Página não encontrada.</div>,
+});
+
+const nav = [
+  { to: "/admin", label: "Dashboard", icon: BarChart3, exact: true },
+  { to: "/admin/clientes", label: "Clientes", icon: Users },
+  { to: "/admin/dispositivos", label: "Dispositivos", icon: MonitorSmartphone },
+  { to: "/admin/ativacoes", label: "Ativações", icon: KeyRound },
+  { to: "/admin/fontes", label: "Fontes / Listas", icon: ListVideo },
+  { to: "/admin/vendas", label: "Vendas", icon: ShoppingCart },
+  { to: "/admin/planos", label: "Planos", icon: Tag, admin: true },
+  { to: "/admin/cupons", label: "Cupons", icon: Ticket, admin: true },
+  { to: "/admin/usuarios", label: "Usuários", icon: UserCog, admin: true },
+  { to: "/admin/configuracoes", label: "Configurações", icon: Settings, admin: true },
+  { to: "/admin/auditoria", label: "Auditoria", icon: ScrollText, admin: true },
+] as const;
+
+function AdminLayout() {
+  const { user, setupAllowed } = Route.useLoaderData();
+  const router = useRouter();
+  const doLogout = useServerFn(logout);
+  if (!user) return <AdminLogin setupAllowed={setupAllowed} />;
+  return (
+    <div className="flex min-h-screen">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 md:flex">
+        <Link to="/" className="mb-6 px-2">
+          <Logo />
+        </Link>
+        <nav className="flex-1 space-y-1 overflow-y-auto">
+          {nav
+            .filter((n) => !("admin" in n) || user.role === "admin")
+            .map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                activeOptions={{ exact: "exact" in n }}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                activeProps={{ className: "bg-sidebar-accent text-primary" }}
+              >
+                <n.icon className="h-4 w-4" />
+                {n.label}
+              </Link>
+            ))}
+        </nav>
+        <div className="mt-4 border-t border-sidebar-border pt-4 text-sm">
+          <p className="truncate font-medium">{user.name}</p>
+          <p className="text-xs text-muted-foreground">{user.role}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 w-full justify-start"
+            onClick={async () => {
+              await doLogout();
+              await router.invalidate();
+            }}
+          >
+            <LogOut />
+            Sair
+          </Button>
+        </div>
+      </aside>
+      <div className="flex-1 overflow-x-hidden">
+        <nav className="flex gap-1 overflow-x-auto border-b border-border p-2 md:hidden">
+          {nav
+            .filter((n) => !("admin" in n) || user.role === "admin")
+            .map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                activeOptions={{ exact: "exact" in n }}
+                className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs"
+                activeProps={{ className: "bg-secondary text-primary" }}
+              >
+                {n.label}
+              </Link>
+            ))}
+        </nav>
+        <main className="p-4 md:p-8">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function AdminLogin({ setupAllowed }: { setupAllowed: boolean }) {
+  const router = useRouter();
+  const doLogin = useServerFn(login);
+  const doSetup = useServerFn(setupFirstAdmin);
+  const [f, setF] = useState({ name: "", email: "", password: "" });
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = setupAllowed
+        ? await doSetup({ data: f })
+        : await doLogin({ data: { email: f.email, password: f.password } });
+      if (!r.ok) setErr(r.error);
+      else await router.invalidate();
+    } catch (e) {
+      setErr(friendly(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="grid min-h-screen place-items-center bg-hero px-4">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm space-y-4 rounded-3xl border border-border bg-card p-8"
+      >
+        <Logo className="text-xl" />
+        <h1 className="text-xl font-bold">
+          {setupAllowed ? "Criar primeiro administrador" : "Entrar no painel"}
+        </h1>
+        {setupAllowed && (
+          <p className="text-xs text-muted-foreground">
+            Nenhum admin existe ainda. Em produção, o admin é criado por ADMIN_EMAIL/ADMIN_PASSWORD.
+          </p>
+        )}
+        {setupAllowed && (
+          <Field label="Nome">
+            <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
+          </Field>
+        )}
+        <Field label="Email">
+          <Input
+            type="email"
+            value={f.email}
+            onChange={(e) => setF({ ...f, email: e.target.value })}
+            required
+            autoComplete="username"
+          />
+        </Field>
+        <Field label="Senha" {...(setupAllowed ? { hint: "Mínimo 10 caracteres" } : {})}>
+          <Input
+            type="password"
+            value={f.password}
+            onChange={(e) => setF({ ...f, password: e.target.value })}
+            required
+            autoComplete={setupAllowed ? "new-password" : "current-password"}
+          />
+        </Field>
+        {err && <p className="text-sm text-destructive">{err}</p>}
+        <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy}>
+          {busy ? "Aguarde…" : setupAllowed ? "Criar e entrar" : "Entrar"}
+        </Button>
+      </form>
+    </div>
+  );
+}
