@@ -14,7 +14,7 @@
     "start": "node scripts/start.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "predeploy": "node scripts/predeploy-check.mjs",
-    "square:start": "node scripts/square-start.mjs",
+    "square:start": "node scripts/start.mjs",
     "typecheck": "tsgo --noEmit || tsc --noEmit",
     "db:seed": "node scripts/migrate.mjs --seed-only"
   },
