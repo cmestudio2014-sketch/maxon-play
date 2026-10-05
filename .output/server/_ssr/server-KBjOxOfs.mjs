@@ -1,6 +1,6 @@
 import "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { D as toCrossJSONStream, E as toCrossJSONAsync, F as resolveManifestCssLink, G as isRedirect, H as isDangerousProtocol, I as waitForReason, J as isNotFound, L as _getRenderedMatches, M as getScriptPreloadAttrs, N as getStylesheetHref, P as resolveManifestAssetLink, R as executeRewriteInput, U as isPromise, a as isSsrResponse, c as stripSsrResponseBody, i as disposeSsrResponse, n as bindSsrResponseToRequest, o as normalizeSsrResponse, p as RouterProvider, q as rootRouteId, r as defineHandlerCallback, s as replaceSsrResponse, t as renderRouterToStream, w as fromJSON, z as invariant } from "../_libs/@tanstack/react-router+[...].mjs";
+import { A as getScriptPreloadAttrs, B as isDangerousProtocol, D as toCrossJSONStream, E as toCrossJSONAsync, F as _getRenderedMatches, G as rootRouteId, I as executeRewriteInput, K as isNotFound, L as invariant, M as resolveManifestAssetLink, N as resolveManifestCssLink, P as waitForReason, U as isRedirect, V as isPromise, a as isSsrResponse, c as stripSsrResponseBody, i as disposeSsrResponse, j as getStylesheetHref, n as bindSsrResponseToRequest, o as normalizeSsrResponse, p as RouterProvider, r as defineHandlerCallback, s as replaceSsrResponse, t as renderRouterToStream, w as fromJSON } from "../_libs/@tanstack/react-router+[...].mjs";
 import { n as createServerHistory } from "../_libs/tanstack__history.mjs";
 import { a as mergeHeaders, i as defaultSerovalDeserializerPlugins, n as getNormalizedURL, o as makeSerovalPlugin, r as createRawStreamRPCPlugin, s as createSerializationAdapter, t as attachRouterServerSsrUtils } from "../_libs/@tanstack/router-core+[...].mjs";
 import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
@@ -8,7 +8,6 @@ import { a as TSS_SERVER_FUNCTION, c as createNullProtoObject, d as getStartCont
 import { t as getServerFnById } from "../__23tanstack-start-server-fn-resolver-2NgLww0K.mjs";
 import { a as requestHandler, i as getResponse } from "./request-response-CG_yhwzM.mjs";
 import { t as createCsrfMiddleware } from "./createCsrfMiddleware-B2To0gPJ.mjs";
-import processModule from "node:process";
 require_react();
 var import_jsx_runtime = require_jsx_runtime();
 function StartServer(props) {
@@ -1133,8 +1132,8 @@ function getEntries() {
 }
 var ROUTER_BASEPATH = "/";
 var SERVER_FN_BASE = "/_serverFn/";
-var IS_PRERENDERING = processModule.env.TSS_PRERENDERING === "true";
-var IS_SHELL_ENV = processModule.env.TSS_SHELL === "true";
+var IS_PRERENDERING = process.env.TSS_PRERENDERING === "true";
+var IS_SHELL_ENV = process.env.TSS_SHELL === "true";
 var IS_DEV = false;
 var ERR_NO_RESPONSE = IS_DEV ? `It looks like you forgot to return a response from your server route handler. If you want to defer to the app router, make sure to have a component set in this route.` : "Internal Server Error";
 var ERR_NO_DEFER = IS_DEV ? `You cannot defer to the app router if there is no component defined on this route.` : "Internal Server Error";

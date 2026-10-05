@@ -1,200 +1,6 @@
 import { r as __exportAll } from "../_runtime.mjs";
-import processModule from "node:process";
-import { Buffer } from "node:buffer";
-import * as s$1 from "node:fs";
-import * as o$2 from "node:path";
-//#region node_modules/unenv/dist/runtime/_internal/utils.mjs
-/* @__NO_SIDE_EFFECTS__ */
-function createNotImplementedError(name) {
-	return /* @__PURE__ */ new Error(`[unenv] ${name} is not implemented yet!`);
-}
-//#endregion
-//#region node_modules/unenv/dist/runtime/web/performance/_polyfills.mjs
-var _timeOrigin = globalThis.performance?.timeOrigin ?? Date.now();
-var _performanceNow = globalThis.performance?.now ? globalThis.performance.now.bind(globalThis.performance) : () => Date.now() - _timeOrigin;
-var _supportedEntryTypes = [
-	"event",
-	"mark",
-	"measure",
-	"resource"
-];
-var _PerformanceEntry = class {
-	__unenv__ = true;
-	detail;
-	entryType = "event";
-	name;
-	startTime;
-	constructor(name, options) {
-		this.name = name;
-		this.startTime = options?.startTime || _performanceNow();
-		this.detail = options?.detail;
-	}
-	get duration() {
-		return _performanceNow() - this.startTime;
-	}
-	toJSON() {
-		return {
-			name: this.name,
-			entryType: this.entryType,
-			startTime: this.startTime,
-			duration: this.duration,
-			detail: this.detail
-		};
-	}
-};
-var _PerformanceMark = class extends _PerformanceEntry {
-	entryType = "mark";
-};
-var _PerformanceMeasure = class extends _PerformanceEntry {
-	entryType = "measure";
-};
-var _PerformanceResourceTiming = class extends _PerformanceEntry {
-	entryType = "resource";
-	serverTiming = [];
-	connectEnd = 0;
-	connectStart = 0;
-	decodedBodySize = 0;
-	domainLookupEnd = 0;
-	domainLookupStart = 0;
-	encodedBodySize = 0;
-	fetchStart = 0;
-	initiatorType = "";
-	name = "";
-	nextHopProtocol = "";
-	redirectEnd = 0;
-	redirectStart = 0;
-	requestStart = 0;
-	responseEnd = 0;
-	responseStart = 0;
-	secureConnectionStart = 0;
-	startTime = 0;
-	transferSize = 0;
-	workerStart = 0;
-	responseStatus = 0;
-};
-var _PerformanceObserver = class {
-	__unenv__ = true;
-	static supportedEntryTypes = _supportedEntryTypes;
-	_callback = null;
-	constructor(callback) {
-		this._callback = callback;
-	}
-	takeRecords() {
-		return [];
-	}
-	disconnect() {
-		throw /* @__PURE__ */ createNotImplementedError("PerformanceObserver.disconnect");
-	}
-	observe(options) {
-		throw /* @__PURE__ */ createNotImplementedError("PerformanceObserver.observe");
-	}
-};
-var _PerformanceObserverEntryList = class {
-	__unenv__ = true;
-	getEntries() {
-		return [];
-	}
-	getEntriesByName(_name, _type) {
-		return [];
-	}
-	getEntriesByType(type) {
-		return [];
-	}
-};
-var _Performance = class {
-	__unenv__ = true;
-	timeOrigin = _timeOrigin;
-	eventCounts = /* @__PURE__ */ new Map();
-	_entries = [];
-	_resourceTimingBufferSize = 0;
-	navigation = void 0;
-	timing = void 0;
-	onresourcetimingbufferfull = null;
-	now() {
-		if (this.timeOrigin === _timeOrigin) return _performanceNow();
-		return Date.now() - this.timeOrigin;
-	}
-	clearMarks(markName) {
-		this._entries = markName ? this._entries.filter((e) => e.name !== markName) : this._entries.filter((e) => e.entryType !== "mark");
-	}
-	clearMeasures(measureName) {
-		this._entries = measureName ? this._entries.filter((e) => e.name !== measureName) : this._entries.filter((e) => e.entryType !== "measure");
-	}
-	clearResourceTimings() {
-		this._entries = this._entries.filter((e) => e.entryType !== "resource" || e.entryType !== "navigation");
-	}
-	getEntries() {
-		return this._entries;
-	}
-	getEntriesByName(name, type) {
-		return this._entries.filter((e) => e.name === name && (!type || e.entryType === type));
-	}
-	getEntriesByType(type) {
-		return this._entries.filter((e) => e.entryType === type);
-	}
-	mark(name, options) {
-		const entry = new _PerformanceMark(name, options);
-		this._entries.push(entry);
-		return entry;
-	}
-	measure(measureName, startOrMeasureOptions, endMark) {
-		let start;
-		let end;
-		if (typeof startOrMeasureOptions === "string") {
-			start = this.getEntriesByName(startOrMeasureOptions, "mark")[0]?.startTime;
-			end = this.getEntriesByName(endMark, "mark")[0]?.startTime;
-		} else {
-			start = Number.parseFloat(startOrMeasureOptions?.start) || this.now();
-			end = Number.parseFloat(startOrMeasureOptions?.end) || this.now();
-		}
-		const entry = new _PerformanceMeasure(measureName, {
-			startTime: start,
-			detail: {
-				start,
-				end
-			}
-		});
-		this._entries.push(entry);
-		return entry;
-	}
-	setResourceTimingBufferSize(maxSize) {
-		this._resourceTimingBufferSize = maxSize;
-	}
-	toJSON() {
-		return this;
-	}
-	addEventListener(type, listener, options) {
-		throw /* @__PURE__ */ createNotImplementedError("Performance.addEventListener");
-	}
-	removeEventListener(type, listener, options) {
-		throw /* @__PURE__ */ createNotImplementedError("Performance.removeEventListener");
-	}
-	dispatchEvent(event) {
-		throw /* @__PURE__ */ createNotImplementedError("Performance.dispatchEvent");
-	}
-};
-//#endregion
-//#region node_modules/unenv/dist/runtime/web/performance/index.mjs
-var PerformanceEntry = globalThis.PerformanceEntry || _PerformanceEntry;
-var PerformanceMark = globalThis.PerformanceMark || _PerformanceMark;
-var PerformanceMeasure = globalThis.PerformanceMeasure || _PerformanceMeasure;
-var PerformanceResourceTiming = globalThis.PerformanceResourceTiming || _PerformanceResourceTiming;
-var PerformanceObserver = globalThis.PerformanceObserver || _PerformanceObserver;
-var Performance = globalThis.Performance || _Performance;
-var PerformanceObserverEntryList = globalThis.PerformanceObserverEntryList || _PerformanceObserverEntryList;
-var performance = globalThis.performance && "addEventListener" in globalThis.performance ? globalThis.performance : new _Performance();
-//#endregion
-//#region node_modules/unenv/dist/runtime/polyfill/performance.mjs
-globalThis.performance ||= performance;
-globalThis.Performance ||= Performance;
-globalThis.PerformanceEntry ||= PerformanceEntry;
-globalThis.PerformanceMark ||= PerformanceMark;
-globalThis.PerformanceMeasure ||= PerformanceMeasure;
-globalThis.PerformanceObserver ||= PerformanceObserver;
-globalThis.PerformanceObserverEntryList ||= PerformanceObserverEntryList;
-globalThis.PerformanceResourceTiming ||= PerformanceResourceTiming;
-var performance_default = globalThis.performance;
-//#endregion
+import * as s$1 from "fs";
+import * as o$2 from "path";
 //#region node_modules/@electric-sql/pglite/dist/chunk-QY3QWFKW.js
 var p$3 = Object.create;
 var i = Object.defineProperty;
@@ -270,10 +76,10 @@ f$2(p$2, {
 	uuid: () => S$2
 });
 function h() {
-	let t = processModule.type;
+	let t = process.type;
 	return t === "renderer" || t === "worker" || t === "service-worker";
 }
-var s$2 = typeof processModule == "object" && typeof processModule.versions == "object" && typeof processModule.versions.node == "string" && !h();
+var s$2 = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string" && !h();
 var m$3 = "/pglite";
 var y$3 = globalThis && typeof globalThis.process < "u" ? globalThis.process : { exitCode: void 0 };
 var a = /* @__PURE__ */ new Map();
@@ -290,7 +96,7 @@ async function b$2(t, e, r) {
 		};
 	}
 	if (s$2) {
-		let i = await (await import("node:fs/promises")).readFile(e), { module: n, instance: l } = await WebAssembly.instantiate(i, t);
+		let i = await (await import("fs/promises")).readFile(e), { module: n, instance: l } = await WebAssembly.instantiate(i, t);
 		return o$3.set(e.toString(), n), {
 			instance: l,
 			module: n
@@ -305,7 +111,7 @@ async function b$2(t, e, r) {
 	}
 }
 async function w$2(t) {
-	return s$2 ? (await (await import("node:fs/promises")).readFile(t)).buffer : (c$1(t), (await a.get(t.toString())).clone().arrayBuffer());
+	return s$2 ? (await (await import("fs/promises")).readFile(t)).buffer : (c$1(t), (await a.get(t.toString())).clone().arrayBuffer());
 }
 var S$2 = () => {
 	if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -892,7 +698,7 @@ function Tr(e, r) {
 async function Mr(e, r = "auto") {
 	if (r === "none") return [e, !1];
 	if (typeof CompressionStream < "u") return [await Pr(e), !0];
-	if (typeof processModule < "u" && processModule.versions && processModule.versions.node) return [await kr(e), !0];
+	if (typeof process < "u" && process.versions && process.versions.node) return [await kr(e), !0];
 	if (r === "auto") return [e, !1];
 	throw new Error("Compression not supported in this environment");
 }
@@ -911,12 +717,12 @@ async function Pr(e) {
 	}), a;
 }
 async function kr(e) {
-	let { promisify: r } = await import("node:util"), { gzip: t } = await import("node:zlib");
+	let { promisify: r } = await import("util"), { gzip: t } = await import("zlib");
 	return await r(t)(e);
 }
 async function De$1(e) {
 	if (typeof CompressionStream < "u") return await Or(e);
-	if (typeof processModule < "u" && processModule.versions && processModule.versions.node) return await Rr(e);
+	if (typeof process < "u" && process.versions && process.versions.node) return await Rr(e);
 	throw new Error("Unsupported environment for decompression");
 }
 async function Or(e) {
@@ -934,7 +740,7 @@ async function Or(e) {
 	}), a;
 }
 async function Rr(e) {
-	let { promisify: r } = await import("node:util"), { gunzip: t } = await import("node:zlib");
+	let { promisify: r } = await import("util"), { gunzip: t } = await import("zlib");
 	return await r(t)(e);
 }
 function Ne$1(e) {
@@ -948,9 +754,9 @@ var Dr = (() => {
 	return async function(moduleArg = {}) {
 		var moduleRtn, Module = moduleArg, readyPromiseResolve, readyPromiseReject, readyPromise = new Promise((e, r) => {
 			readyPromiseResolve = e, readyPromiseReject = r;
-		}), ENVIRONMENT_IS_WEB = typeof window == "object", ENVIRONMENT_IS_WORKER = typeof WorkerGlobalScope < "u", ENVIRONMENT_IS_NODE = typeof processModule == "object" && typeof processModule.versions == "object" && typeof processModule.versions.node == "string" && processModule.type != "renderer";
+		}), ENVIRONMENT_IS_WEB = typeof window == "object", ENVIRONMENT_IS_WORKER = typeof WorkerGlobalScope < "u", ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string" && process.type != "renderer";
 		if (ENVIRONMENT_IS_NODE) {
-			let { createRequire: e } = await import("node:module"), r = import.meta.url;
+			let { createRequire: e } = await import("module"), r = import.meta.url;
 			r.startsWith("data:") && (r = "/");
 			var require = e(r);
 		}
@@ -969,8 +775,8 @@ var Dr = (() => {
 			}, readAsync = async (e, r = !0) => {
 				e = isFileURI(e) ? new URL(e) : e;
 				return fs.readFileSync(e, r ? void 0 : "utf8");
-			}, !Module.thisProgram && processModule.argv.length > 1 && (thisProgram = processModule.argv[1].replace(/\\/g, "/")), arguments_ = processModule.argv.slice(2), quit_ = (e, r) => {
-				throw processModule.exitCode = e, r;
+			}, !Module.thisProgram && process.argv.length > 1 && (thisProgram = process.argv[1].replace(/\\/g, "/")), arguments_ = process.argv.slice(2), quit_ = (e, r) => {
+				throw process.exitCode = e, r;
 			};
 		} else (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) && (ENVIRONMENT_IS_WORKER ? scriptDirectory = self.location.href : typeof document < "u" && document.currentScript && (scriptDirectory = document.currentScript.src), _scriptName && (scriptDirectory = _scriptName), scriptDirectory.startsWith("blob:") ? scriptDirectory = "" : scriptDirectory = scriptDirectory.substr(0, scriptDirectory.replace(/[?#].*/, "").lastIndexOf("/") + 1), ENVIRONMENT_IS_WORKER && (readBinary = (e) => {
 			var r = new XMLHttpRequest();
@@ -1627,7 +1433,7 @@ var Dr = (() => {
 			if (!FS_stdin_getChar_buffer.length) {
 				var e = null;
 				if (ENVIRONMENT_IS_NODE) {
-					var r = 256, t = Buffer.alloc(r), n = 0, o = processModule.stdin.fd;
+					var r = 256, t = Buffer.alloc(r), n = 0, o = process.stdin.fd;
 					try {
 						n = fs.readSync(o, t, 0, r);
 					} catch (a) {
@@ -3513,7 +3319,7 @@ var Dr = (() => {
 			} catch (r) {
 				handleException(r);
 			}
-		}, _emscripten_get_now = () => performance_default.now();
+		}, _emscripten_get_now = () => performance.now();
 		_emscripten_get_now.sig = "d";
 		var __setitimer_js = (e, r) => {
 			if (timers[e] && (clearTimeout(timers[e].id), delete timers[e]), !r) return 0;
@@ -6086,7 +5892,7 @@ u$1();
 var Be = L$2(Re$2(), 1);
 async function Re(e) {
 	if (p$2.IN_NODE) {
-		let t = await import("node:fs"), r = await import("node:zlib"), { Writable: a } = await import("node:stream"), { pipeline: o } = await import("node:stream/promises");
+		let t = await import("fs"), r = await import("zlib"), { Writable: a } = await import("stream"), { pipeline: o } = await import("stream/promises");
 		if (!t.existsSync(e)) throw new Error(`Extension bundle not found: ${e}`);
 		let _ = r.createGunzip(), s = [];
 		return await o(t.createReadStream(e), _, new a({ write(n, l, d) {
@@ -6221,18 +6027,18 @@ var ht = (() => {
 	return async function(moduleArg = {}) {
 		var moduleRtn, Module = moduleArg, readyPromiseResolve, readyPromiseReject, readyPromise = new Promise((e, t) => {
 			readyPromiseResolve = e, readyPromiseReject = t;
-		}), ENVIRONMENT_IS_WEB = typeof window == "object", ENVIRONMENT_IS_WORKER = typeof WorkerGlobalScope < "u", ENVIRONMENT_IS_NODE = typeof processModule == "object" && typeof processModule.versions == "object" && typeof processModule.versions.node == "string" && processModule.type != "renderer";
+		}), ENVIRONMENT_IS_WEB = typeof window == "object", ENVIRONMENT_IS_WORKER = typeof WorkerGlobalScope < "u", ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string" && process.type != "renderer";
 		if (ENVIRONMENT_IS_NODE) {
-			let { createRequire: e } = await import("node:module"), t = import.meta.url;
+			let { createRequire: e } = await import("module"), t = import.meta.url;
 			t.startsWith("data:") && (t = "/");
 			var require = e(t);
 		}
 		Module.expectedDataFileDownloads ?? (Module.expectedDataFileDownloads = 0), Module.expectedDataFileDownloads++, (() => {
 			if (typeof ENVIRONMENT_IS_PTHREAD < "u" && ENVIRONMENT_IS_PTHREAD || typeof ENVIRONMENT_IS_WASM_WORKER < "u" && ENVIRONMENT_IS_WASM_WORKER) return;
-			var r = typeof processModule == "object" && typeof processModule.versions == "object" && typeof processModule.versions.node == "string";
+			var r = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 			function a(o) {
 				var _ = "";
-				typeof window == "object" ? window.encodeURIComponent(window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/")) + "/") : typeof processModule > "u" && typeof location < "u" && encodeURIComponent(location.pathname.substring(0, location.pathname.lastIndexOf("/")) + "/");
+				typeof window == "object" ? window.encodeURIComponent(window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/")) + "/") : typeof process > "u" && typeof location < "u" && encodeURIComponent(location.pathname.substring(0, location.pathname.lastIndexOf("/")) + "/");
 				var s = "pglite.data", n = "pglite.data", l = Module.locateFile ? Module.locateFile(n, "") : n, d = o.remote_package_size;
 				function p(c, w, S, k) {
 					if (r) {
@@ -9820,8 +9626,8 @@ var ht = (() => {
 			}, readAsync = async (e, t = !0) => {
 				e = isFileURI(e) ? new URL(e) : e;
 				return fs.readFileSync(e, t ? void 0 : "utf8");
-			}, !Module.thisProgram && processModule.argv.length > 1 && (thisProgram = processModule.argv[1].replace(/\\/g, "/")), arguments_ = processModule.argv.slice(2), quit_ = (e, t) => {
-				throw processModule.exitCode = e, t;
+			}, !Module.thisProgram && process.argv.length > 1 && (thisProgram = process.argv[1].replace(/\\/g, "/")), arguments_ = process.argv.slice(2), quit_ = (e, t) => {
+				throw process.exitCode = e, t;
 			};
 		} else (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) && (ENVIRONMENT_IS_WORKER ? scriptDirectory = self.location.href : typeof document < "u" && document.currentScript && (scriptDirectory = document.currentScript.src), _scriptName && (scriptDirectory = _scriptName), scriptDirectory.startsWith("blob:") ? scriptDirectory = "" : scriptDirectory = scriptDirectory.substr(0, scriptDirectory.replace(/[?#].*/, "").lastIndexOf("/") + 1), ENVIRONMENT_IS_WORKER && (readBinary = (e) => {
 			var t = new XMLHttpRequest();
@@ -10532,7 +10338,7 @@ var ht = (() => {
 			if (!FS_stdin_getChar_buffer.length) {
 				var e = null;
 				if (ENVIRONMENT_IS_NODE) {
-					var t = 256, r = Buffer.alloc(t), a = 0, o = processModule.stdin.fd;
+					var t = 256, r = Buffer.alloc(t), a = 0, o = process.stdin.fd;
 					try {
 						a = fs.readSync(o, r, 0, t);
 					} catch (_) {
@@ -11198,8 +11004,8 @@ var ht = (() => {
 		}, NODEFS = {
 			isWindows: !1,
 			staticInit() {
-				NODEFS.isWindows = !!processModule.platform.match(/^win/);
-				var e = processModule.binding("constants");
+				NODEFS.isWindows = !!process.platform.match(/^win/);
+				var e = process.binding("constants");
 				e.fs && (e = e.fs), NODEFS.flagsForNodeMap = {
 					1024: e.O_APPEND,
 					64: e.O_CREAT,
@@ -13582,7 +13388,7 @@ ${n}`), 0;
 			} catch (t) {
 				handleException(t);
 			}
-		}, _emscripten_get_now = () => performance_default.now();
+		}, _emscripten_get_now = () => performance.now();
 		_emscripten_get_now.sig = "d";
 		var __setitimer_js = (e, t) => {
 			if (timers[e] && (clearTimeout(timers[e].id), delete timers[e]), !t) return 0;
@@ -15179,4 +14985,4 @@ shared_preload_libraries=${r.join(",")}`;
 var Ve = N;
 u$1();
 //#endregion
-export { performance_default as n, dist_exports as t };
+export { dist_exports as t };

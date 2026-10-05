@@ -136,7 +136,7 @@ function withSecurityHeaders(response, request) {
 		return response;
 	}
 }
-var server_default = { async fetch(request, env, ctx) {
+var server_default = { async fetch(request, env = {}, ctx = {}) {
 	try {
 		return withSecurityHeaders(await normalizeCatastrophicSsrResponse(await (await getServerEntry()).fetch(request, env, ctx)), request);
 	} catch (error) {

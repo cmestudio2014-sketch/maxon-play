@@ -1,8 +1,4 @@
 import { a as __toCommonJS, i as __require, n as __esmMin, o as __toESM, r as __exportAll, t as __commonJSMin } from "../_runtime.mjs";
-import { O as globalthis_default, k as init_globalthis } from "./@tanstack/react-router+[...].mjs";
-import processModule from "node:process";
-import { Buffer } from "node:buffer";
-import { setImmediate } from "node:timers";
 //#region node_modules/postgres-array/index.js
 var require_postgres_array = /* @__PURE__ */ __commonJSMin(((exports) => {
 	exports.parse = function(source, transform) {
@@ -779,7 +775,7 @@ var require_pg_types = /* @__PURE__ */ __commonJSMin(((exports) => {
 var require_defaults = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	var user;
 	try {
-		user = processModule.platform === "win32" ? processModule.env.USERNAME : processModule.env.USER;
+		user = process.platform === "win32" ? process.env.USERNAME : process.env.USER;
 	} catch {}
 	module.exports = {
 		host: "localhost",
@@ -819,8 +815,8 @@ var require_defaults = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#region node_modules/pg/lib/utils.js
 var require_utils$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	var defaults = require_defaults();
-	var nodeUtils$2 = __require("node:util");
-	var { isDate } = __require("node:util/types");
+	var nodeUtils$2 = __require("util");
+	var { isDate } = __require("util/types");
 	var invalidDateDeprecationNotice = nodeUtils$2.deprecate(() => {}, "Sending an invalid date to Postgres is deprecated and will throw an error in the next major version of pg. Ensure any Date object passed as a query parameter is valid.", "PG_INVALID_DATE");
 	function escapeElement(elementRepresentation) {
 		return "\"" + elementRepresentation.replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + "\"";
@@ -930,7 +926,7 @@ var require_utils$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/pg/lib/crypto/utils.js
 var require_utils = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	var nodeCrypto = __require("node:crypto");
+	var nodeCrypto = __require("crypto");
 	module.exports = {
 		postgresMd5PasswordHash,
 		randomBytes,
@@ -1312,7 +1308,7 @@ var require_pg_connection_string = /* @__PURE__ */ __commonJSMin(((exports, modu
 		if (config.ssl === "0") config.ssl = false;
 		if (config.sslcert || config.sslkey || config.sslrootcert || config.sslmode) config.ssl = {};
 		if (config.sslnegotiation === "direct" && config.ssl === void 0) config.ssl = true;
-		const fs = config.sslcert || config.sslkey || config.sslrootcert ? __require("node:fs") : null;
+		const fs = config.sslcert || config.sslkey || config.sslrootcert ? __require("fs") : null;
 		if (config.sslcert) config.ssl.cert = fs.readFileSync(config.sslcert).toString();
 		if (config.sslkey) config.ssl.key = fs.readFileSync(config.sslkey).toString();
 		if (config.sslrootcert) config.ssl.ca = fs.readFileSync(config.sslrootcert).toString();
@@ -1372,9 +1368,9 @@ var require_pg_connection_string = /* @__PURE__ */ __commonJSMin(((exports, modu
 		return toClientConfig(parse(str));
 	}
 	function deprecatedSslModeWarning(sslmode) {
-		if (!deprecatedSslModeWarning.warned && typeof processModule !== "undefined" && processModule.emitWarning) {
+		if (!deprecatedSslModeWarning.warned && typeof process !== "undefined" && process.emitWarning) {
 			deprecatedSslModeWarning.warned = true;
-			processModule.emitWarning(`SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+			process.emitWarning(`SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -1392,17 +1388,17 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 //#endregion
 //#region node_modules/pg/lib/connection-parameters.js
 var require_connection_parameters = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	var dns = __require("node:dns");
+	var dns = __require("dns");
 	var defaults = require_defaults();
 	var parse = require_pg_connection_string().parse;
 	var val = function(key, config, envVar) {
 		if (config[key]) return config[key];
-		if (envVar === void 0) envVar = processModule.env["PG" + key.toUpperCase()];
-		else if (envVar === false) {} else envVar = processModule.env[envVar];
+		if (envVar === void 0) envVar = process.env["PG" + key.toUpperCase()];
+		else if (envVar === false) {} else envVar = process.env[envVar];
 		return envVar || defaults[key];
 	};
 	var readSSLConfigFromEnvironment = function() {
-		switch (processModule.env.PGSSLMODE) {
+		switch (process.env.PGSSLMODE) {
 			case "disable": return false;
 			case "prefer":
 			case "require":
@@ -1454,7 +1450,7 @@ var require_connection_parameters = /* @__PURE__ */ __commonJSMin(((exports, mod
 			this.lock_timeout = val("lock_timeout", config, false);
 			this.idle_in_transaction_session_timeout = val("idle_in_transaction_session_timeout", config, false);
 			this.query_timeout = val("query_timeout", config, false);
-			if (config.connectionTimeoutMillis === void 0) this.connect_timeout = processModule.env.PGCONNECT_TIMEOUT || 0;
+			if (config.connectionTimeoutMillis === void 0) this.connect_timeout = process.env.PGCONNECT_TIMEOUT || 0;
 			else this.connect_timeout = Math.floor(config.connectionTimeoutMillis / 1e3);
 			if (config.keepAlive === false) this.keepalives = 0;
 			else if (config.keepAlive === true) this.keepalives = 1;
@@ -1563,7 +1559,7 @@ var require_result = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/pg/lib/query.js
 var require_query$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	var { EventEmitter: EventEmitter$5 } = __require("node:events");
+	var { EventEmitter: EventEmitter$5 } = __require("events");
 	var Result = require_result();
 	var utils = require_utils$1();
 	var Query = class extends EventEmitter$5 {
@@ -1580,7 +1576,7 @@ var require_query$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			this.portal = config.portal || "";
 			this.callback = config.callback;
 			this._rowMode = config.rowMode;
-			if (processModule.domain && config.callback) this.callback = processModule.domain.bind(config.callback);
+			if (process.domain && config.callback) this.callback = process.domain.bind(config.callback);
 			this._result = new Result(this._rowMode, this.types);
 			this._results = this._result;
 			this._canceledDueToError = false;
@@ -1638,7 +1634,7 @@ var require_query$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			if (this.callback) try {
 				this.callback(null, this._results);
 			} catch (err) {
-				processModule.nextTick(() => {
+				process.nextTick(() => {
 					throw err;
 				});
 			}
@@ -2488,7 +2484,7 @@ var require_parser = /* @__PURE__ */ __commonJSMin(((exports) => {
 }));
 //#endregion
 //#region node_modules/pg-protocol/dist/index.js
-var require_dist$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
+var require_dist = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.DatabaseError = exports.serialize = void 0;
 	exports.parse = parse;
@@ -2514,127 +2510,10 @@ var require_dist$1 = /* @__PURE__ */ __commonJSMin(((exports) => {
 	}
 }));
 //#endregion
-//#region node_modules/pg-cloudflare/dist/index.js
-var require_dist = /* @__PURE__ */ __commonJSMin(((exports) => {
+//#region node_modules/pg-cloudflare/dist/empty.js
+var require_empty = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.CloudflareSocket = void 0;
-	var events_1 = __require("node:events");
-	/**
-	* Wrapper around the Cloudflare built-in socket that can be used by the `Connection`.
-	*/
-	var CloudflareSocket = class extends events_1.EventEmitter {
-		constructor(ssl) {
-			super();
-			this.ssl = ssl;
-			this.writable = false;
-			this.destroyed = false;
-			this._upgrading = false;
-			this._upgraded = false;
-			this._cfSocket = null;
-			this._cfWriter = null;
-			this._cfReader = null;
-		}
-		setNoDelay() {
-			return this;
-		}
-		setKeepAlive() {
-			return this;
-		}
-		ref() {
-			return this;
-		}
-		unref() {
-			return this;
-		}
-		async connect(port, host, connectListener) {
-			try {
-				if (connectListener) this.once("connect", connectListener);
-				const options = this.ssl ? { secureTransport: "starttls" } : {};
-				const connect = (await import("cloudflare:sockets")).connect;
-				this._cfSocket = connect(`${host}:${port}`, options);
-				this._cfWriter = this._cfSocket.writable.getWriter();
-				this._addClosedHandler();
-				this._cfReader = this._cfSocket.readable.getReader();
-				if (this.ssl) this._listenOnce().catch((e) => this.emit("error", e));
-				else this._listen().catch((e) => this.emit("error", e));
-				await this._cfWriter.ready;
-				this.writable = true;
-				this.emit("connect");
-				return this;
-			} catch (e) {
-				this.emit("error", e);
-			}
-		}
-		async _listen() {
-			while (true) {
-				const { done, value } = await this._cfReader.read();
-				if (done) break;
-				this.emit("data", Buffer.from(value));
-			}
-		}
-		async _listenOnce() {
-			const { done, value } = await this._cfReader.read();
-			this.emit("data", Buffer.from(value));
-		}
-		write(data, encodingOrCallback = "utf8", callback = () => {}) {
-			const encoding = typeof encodingOrCallback === "function" ? "utf8" : encodingOrCallback;
-			if (typeof encodingOrCallback === "function") callback = encodingOrCallback;
-			if (data.length === 0) return callback();
-			if (typeof data === "string") data = Buffer.from(data, encoding);
-			this._cfWriter.write(data).then(() => {
-				callback();
-			}, (err) => {
-				callback(err);
-			});
-			return true;
-		}
-		end(data = Buffer.alloc(0), encoding = "utf8", callback = () => {}) {
-			this.write(data, encoding, (err) => {
-				const socket = this._cfSocket;
-				(socket?.close())?.then(() => {
-					if (this._cfSocket === socket) {
-						this._cfSocket = null;
-						this.emit("close");
-					}
-				}).catch((e) => this.emit("error", e));
-				if (callback) callback(err);
-			});
-			return this;
-		}
-		destroy(reason) {
-			this.destroyed = true;
-			return this.end();
-		}
-		startTls(options) {
-			if (this._upgraded) {
-				this.emit("error", "Cannot call `startTls()` more than once on a socket");
-				return;
-			}
-			this._cfWriter.releaseLock();
-			this._cfReader.releaseLock();
-			this._upgrading = true;
-			this._cfSocket = this._cfSocket.startTls(options);
-			this._cfWriter = this._cfSocket.writable.getWriter();
-			this._cfReader = this._cfSocket.readable.getReader();
-			this._addClosedHandler();
-			this._listen().catch((e) => this.emit("error", e));
-		}
-		_addClosedHandler() {
-			const socket = this._cfSocket;
-			socket.closed.then(() => {
-				if (!this._upgrading) {
-					if (this._cfSocket === socket) {
-						this._cfSocket = null;
-						this.emit("close");
-					}
-				} else {
-					this._upgrading = false;
-					this._upgraded = true;
-				}
-			}).catch((e) => this.emit("error", e));
-		}
-	};
-	exports.CloudflareSocket = CloudflareSocket;
+	exports.default = {};
 }));
 //#endregion
 //#region node_modules/pg/lib/stream.js
@@ -2658,10 +2537,10 @@ var require_stream = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	*/
 	function getNodejsStreamFuncs() {
 		function getStream(ssl) {
-			return new (__require("node:net")).Socket();
+			return new (__require("net")).Socket();
 		}
 		function getSecureStream(options) {
-			return __require("node:tls").connect(options);
+			return __require("tls").connect(options);
 		}
 		return {
 			getStream,
@@ -2673,7 +2552,7 @@ var require_stream = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	*/
 	function getCloudflareStreamFuncs() {
 		function getStream(ssl) {
-			const { CloudflareSocket } = require_dist();
+			const { CloudflareSocket } = require_empty();
 			return new CloudflareSocket(ssl);
 		}
 		function getSecureStream(options) {
@@ -2706,8 +2585,8 @@ var require_stream = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/pg/lib/connection.js
 var require_connection = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	var EventEmitter$4 = __require("node:events").EventEmitter;
-	var { parse, serialize } = require_dist$1();
+	var EventEmitter$4 = __require("events").EventEmitter;
+	var { parse, serialize } = require_dist();
 	var stream = require_stream();
 	var { getStream } = stream;
 	var flushBuffer = serialize.flush();
@@ -2777,7 +2656,7 @@ var require_connection = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 				if ("key" in self.ssl) options.key = self.ssl.key;
 			}
 			if (self.sslNegotiation === "direct") options.ALPNProtocols = ["postgresql"];
-			const net = __require("node:net");
+			const net = __require("net");
 			if (net.isIP && net.isIP(host) === 0) options.servername = host;
 			try {
 				self.stream = stream.getSecureStream(options);
@@ -2872,8 +2751,8 @@ var require_connection = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/split2/index.js
 var require_split2 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	var { Transform } = __require("node:stream");
-	var { StringDecoder } = __require("node:string_decoder");
+	var { Transform } = __require("stream");
+	var { StringDecoder } = __require("string_decoder");
 	var kLast = Symbol("last");
 	var kDecoder = Symbol("decoder");
 	function transform(chunk, enc, cb) {
@@ -2962,13 +2841,13 @@ var require_split2 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/pgpass/lib/helper.js
 var require_helper = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	var path = __require("node:path");
-	var Stream = __require("node:stream").Stream;
+	var path = __require("path");
+	var Stream = __require("stream").Stream;
 	var split = require_split2();
-	var util$2 = __require("node:util");
+	var util$2 = __require("util");
 	var defaultPort = 5432;
-	var isWin = processModule.platform === "win32";
-	var warnStream = processModule.stderr;
+	var isWin = process.platform === "win32";
+	var warnStream = process.stderr;
 	var S_IRWXG = 56;
 	var S_IRWXO = 7;
 	var S_IFMT = 61440;
@@ -3005,11 +2884,11 @@ var require_helper = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		return old;
 	};
 	module.exports.getFileName = function(rawEnv) {
-		var env = rawEnv || processModule.env;
+		var env = rawEnv || process.env;
 		return env.PGPASSFILE || (isWin ? path.join(env.APPDATA || "./", "postgresql", "pgpass.conf") : path.join(env.HOME || "./", ".pgpass"));
 	};
 	module.exports.usePgPass = function(stats, fname) {
-		if (Object.prototype.hasOwnProperty.call(processModule.env, "PGPASSWORD")) return false;
+		if (Object.prototype.hasOwnProperty.call(process.env, "PGPASSWORD")) return false;
 		if (isWin) return true;
 		fname = fname || "<unkn>";
 		if (!isRegFile(stats.mode)) {
@@ -3062,7 +2941,7 @@ var require_helper = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isLastField = false;
 		var addToObj = function(idx, i0, i1) {
 			var field = line.substring(i0, i1);
-			if (!Object.hasOwnProperty.call(processModule.env, "PGPASS_NO_DEESCAPE")) field = field.replace(/\\([:\\])/g, "$1");
+			if (!Object.hasOwnProperty.call(process.env, "PGPASS_NO_DEESCAPE")) field = field.replace(/\\([:\\])/g, "$1");
 			obj[fieldNames[idx]] = field;
 		};
 		for (var i = 0; i < line.length - 1; i += 1) {
@@ -3112,8 +2991,8 @@ var require_helper = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/pgpass/lib/index.js
 var require_lib$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	__require("node:path");
-	var fs = __require("node:fs");
+	__require("path");
+	var fs = __require("fs");
 	var helper = require_helper();
 	module.exports = function(connInfo, cb) {
 		var file = helper.getFileName();
@@ -3128,10 +3007,9 @@ var require_lib$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/pg/lib/client.js
 var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	init_globalthis();
-	var EventEmitter$3 = __require("node:events").EventEmitter;
+	var EventEmitter$3 = __require("events").EventEmitter;
 	var utils = require_utils$1();
-	var nodeUtils$1 = __require("node:util");
+	var nodeUtils$1 = __require("util");
 	var sasl = require_sasl();
 	var TypeOverrides = require_type_overrides();
 	var ConnectionParameters = require_connection_parameters();
@@ -3169,7 +3047,7 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			this.replication = this.connectionParameters.replication;
 			const c = config || {};
 			if (c.Promise) byoPromiseDeprecationNotice();
-			this._Promise = c.Promise || globalthis_default.Promise;
+			this._Promise = c.Promise || global.Promise;
 			this._types = new TypeOverrides(c.types);
 			this._ending = false;
 			this._ended = false;
@@ -3213,7 +3091,7 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		}
 		_errorAllQueries(err) {
 			const enqueueError = (query) => {
-				processModule.nextTick(() => {
+				process.nextTick(() => {
 					query.handleError(err, this.connection);
 				});
 			};
@@ -3233,7 +3111,7 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			this._connectionCallback = callback;
 			if (this._connecting || this._connected) {
 				const err = /* @__PURE__ */ new Error("Client has already been connected. You cannot reuse a client.");
-				processModule.nextTick(() => {
+				process.nextTick(() => {
 					callback(err);
 				});
 				return;
@@ -3267,7 +3145,7 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 					else this._handleErrorEvent(error);
 					else if (!this._connectionError) this._handleErrorEvent(error);
 				}
-				processModule.nextTick(() => {
+				process.nextTick(() => {
 					this.emit("end");
 				});
 			});
@@ -3550,7 +3428,7 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 					this.readyForQuery = false;
 					this.hasExecuted = true;
 					const queryError = activeQuery.submit(this.connection);
-					if (queryError) processModule.nextTick(() => {
+					if (queryError) process.nextTick(() => {
 						activeQuery.handleError(queryError, this.connection);
 						this.readyForQuery = true;
 						this._pulseQueryQueue();
@@ -3568,7 +3446,7 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 				this.hasExecuted = true;
 				const queryError = query.submit(this.connection);
 				if (queryError) {
-					processModule.nextTick(() => {
+					process.nextTick(() => {
 						query.handleError(queryError, this.connection);
 					});
 					continue;
@@ -3606,7 +3484,7 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 				const queryCallback = query.callback || (() => {});
 				const readTimeoutTimer = setTimeout(() => {
 					const error = /* @__PURE__ */ new Error("Query read timeout");
-					processModule.nextTick(() => {
+					process.nextTick(() => {
 						query.handleError(error, this.connection);
 					});
 					queryCallback(error);
@@ -3629,20 +3507,20 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			if (this.pipeline) {
 				const portalQuery = typeof config.submit === "function" && !(query instanceof Query) ? "Custom query classes such as pg-cursor and pg-query-stream are" : query.rows ? "The `rows` option is" : null;
 				if (portalQuery) {
-					processModule.nextTick(() => {
+					process.nextTick(() => {
 						query.handleError(/* @__PURE__ */ new Error(`${portalQuery} not supported in pipeline mode`), this.connection);
 					});
 					return result;
 				}
 			}
 			if (!this._queryable) {
-				processModule.nextTick(() => {
+				process.nextTick(() => {
 					query.handleError(/* @__PURE__ */ new Error("Client has encountered a connection error and is not queryable"), this.connection);
 				});
 				return result;
 			}
 			if (this._ending) {
-				processModule.nextTick(() => {
+				process.nextTick(() => {
 					query.handleError(/* @__PURE__ */ new Error("Client was closed and is not queryable"), this.connection);
 				});
 				return result;
@@ -3687,8 +3565,7 @@ var require_client$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/pg-pool/index.js
 var require_pg_pool = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	init_globalthis();
-	var EventEmitter$2 = __require("node:events").EventEmitter;
+	var EventEmitter$2 = __require("events").EventEmitter;
 	var NOOP = function() {};
 	var removeWhere = (list, predicate) => {
 		const i = list.findIndex(predicate);
@@ -3759,7 +3636,7 @@ var require_pg_pool = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			this.options.maxLifetimeSeconds = this.options.maxLifetimeSeconds || 0;
 			this.log = this.options.log || function() {};
 			this.Client = this.options.Client || Client || require_lib().Client;
-			this.Promise = this.options.Promise || globalthis_default.Promise;
+			this.Promise = this.options.Promise || global.Promise;
 			if (typeof this.options.idleTimeoutMillis === "undefined") this.options.idleTimeoutMillis = 1e4;
 			this._clients = [];
 			this._idle = [];
@@ -3832,7 +3709,7 @@ var require_pg_pool = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			const response = promisify(this.Promise, cb);
 			const result = response.result;
 			if (this._isFull() || this._idle.length) {
-				if (this._idle.length) processModule.nextTick(() => this._pulseQueue());
+				if (this._idle.length) process.nextTick(() => this._pulseQueue());
 				if (!this.options.connectionTimeoutMillis) {
 					this._pendingQueue.push(new PendingItem(response.callback));
 					return result;
@@ -4043,8 +3920,8 @@ var init___vite_optional_peer_dep_pg_native_pg = __esmMin((() => {
 //#endregion
 //#region node_modules/pg/lib/native/query.js
 var require_query = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	var EventEmitter$1 = __require("node:events").EventEmitter;
-	var util$1 = __require("node:util");
+	var EventEmitter$1 = __require("events").EventEmitter;
+	var util$1 = __require("util");
 	var utils = require_utils$1();
 	var NativeQuery = module.exports = function(config, values, callback) {
 		EventEmitter$1.call(this);
@@ -4125,7 +4002,7 @@ var require_query = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			self.emit("end", results);
 			if (self.callback) self.callback(null, results);
 		};
-		if (processModule.domain) after = processModule.domain.bind(after);
+		if (process.domain) after = process.domain.bind(after);
 		if (this.name) {
 			if (this.name.length > 63) {
 				console.error("Warning! Postgres only supports 63 characters for query names.");
@@ -4156,8 +4033,7 @@ var require_query = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/pg/lib/native/client.js
 var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	init_globalthis();
-	var nodeUtils = __require("node:util");
+	var nodeUtils = __require("util");
 	var Native;
 	try {
 		Native = (init___vite_optional_peer_dep_pg_native_pg(), __toCommonJS(__vite_optional_peer_dep_pg_native_pg_exports));
@@ -4165,15 +4041,15 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		throw e;
 	}
 	var TypeOverrides = require_type_overrides();
-	var EventEmitter = __require("node:events").EventEmitter;
-	var util = __require("node:util");
+	var EventEmitter = __require("events").EventEmitter;
+	var util = __require("util");
 	var ConnectionParameters = require_connection_parameters();
 	var NativeQuery = require_query();
 	var queryQueueLengthDeprecationNotice = nodeUtils.deprecate(() => {}, "Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.");
 	var Client = module.exports = function(config) {
 		EventEmitter.call(this);
 		config = config || {};
-		this._Promise = config.Promise || globalthis_default.Promise;
+		this._Promise = config.Promise || global.Promise;
 		this._types = new TypeOverrides(config.types);
 		this.native = new Native({ types: this._types });
 		this._queryQueue = [];
@@ -4201,7 +4077,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	util.inherits(Client, EventEmitter);
 	Client.prototype._errorAllQueries = function(err) {
 		const enqueueError = (query) => {
-			processModule.nextTick(() => {
+			process.nextTick(() => {
 				query.native = this.native;
 				query.handleError(err);
 			});
@@ -4216,7 +4092,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	Client.prototype._connect = function(cb) {
 		const self = this;
 		if (this._connecting) {
-			processModule.nextTick(() => cb(/* @__PURE__ */ new Error("Client has already been connected. You cannot reuse a client.")));
+			process.nextTick(() => cb(/* @__PURE__ */ new Error("Client has already been connected. You cannot reuse a client.")));
 			return;
 		}
 		this._connecting = true;
@@ -4288,7 +4164,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			queryCallback = query.callback || (() => {});
 			readTimeoutTimer = setTimeout(() => {
 				const error = /* @__PURE__ */ new Error("Query read timeout");
-				processModule.nextTick(() => {
+				process.nextTick(() => {
 					query.handleError(error, this.connection);
 				});
 				queryCallback(error);
@@ -4304,14 +4180,14 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		}
 		if (!this._queryable) {
 			query.native = this.native;
-			processModule.nextTick(() => {
+			process.nextTick(() => {
 				query.handleError(/* @__PURE__ */ new Error("Client has encountered a connection error and is not queryable"));
 			});
 			return result;
 		}
 		if (this._ending) {
 			query.native = this.native;
-			processModule.nextTick(() => {
+			process.nextTick(() => {
 				query.handleError(/* @__PURE__ */ new Error("Client was closed and is not queryable"));
 			});
 			return result;
@@ -4335,7 +4211,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			self.native.end(function() {
 				self._connected = false;
 				self._errorAllQueries(/* @__PURE__ */ new Error("Connection terminated"));
-				processModule.nextTick(() => {
+				process.nextTick(() => {
 					self.emit("end");
 					if (cb) cb();
 				});
@@ -4456,7 +4332,7 @@ var require_lib = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	var utils = require_utils$1();
 	var Pool = require_pg_pool();
 	var TypeOverrides = require_type_overrides();
-	var { DatabaseError } = require_dist$1();
+	var { DatabaseError } = require_dist();
 	var { escapeIdentifier, escapeLiteral } = require_utils$1();
 	var poolFactory = (Client) => {
 		return class BoundPool extends Pool {
@@ -4483,7 +4359,7 @@ var require_lib = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	var clientConstructor = Client;
 	var forceNative = false;
 	try {
-		forceNative = !!processModule.env.NODE_PG_FORCE_NATIVE;
+		forceNative = !!process.env.NODE_PG_FORCE_NATIVE;
 	} catch {}
 	if (forceNative) clientConstructor = require_native();
 	module.exports = new PG(clientConstructor);
