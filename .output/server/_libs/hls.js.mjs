@@ -1,4 +1,5 @@
 import { r as __exportAll } from "../_runtime.mjs";
+import { n as performance_default } from "./electric-sql__pglite+unenv.mjs";
 //#region node_modules/hls.js/dist/hls.mjs
 var hls_exports = /* @__PURE__ */ __exportAll({
 	AbrController: () => AbrController,
@@ -3812,7 +3813,7 @@ var AbrController = class extends Logger {
 			if (!hls) return;
 			const { autoLevelEnabled, media } = hls;
 			if (!frag || !media) return;
-			const now = performance.now();
+			const now = performance_default.now();
 			const stats = part ? part.stats : frag.stats;
 			const duration = part ? part.duration : frag.duration;
 			const timeLoading = now - stats.loading.start;
@@ -4001,7 +4002,7 @@ var AbrController = class extends Logger {
 				const frag = data.frag;
 				const { fragCurrent, partCurrent: part } = this;
 				if (frag && fragmentsAreEqual(frag, fragCurrent)) {
-					const now = performance.now();
+					const now = performance_default.now();
 					const stats = part ? part.stats : frag.stats;
 					const timeLoading = now - stats.loading.start;
 					const ttfb = stats.loading.first ? stats.loading.first - stats.loading.start : -1;
@@ -19044,7 +19045,7 @@ var CmcdReporter = class {
 	*/
 	constructor(config, requester = defaultRequester) {
 		var _performance$timing;
-		this.timeOrigin = performance.timeOrigin || ((_performance$timing = performance.timing) == null ? void 0 : _performance$timing.fetchStart) || Date.now() - performance.now();
+		this.timeOrigin = performance_default.timeOrigin || ((_performance$timing = performance_default.timing) == null ? void 0 : _performance$timing.fetchStart) || Date.now() - performance_default.now();
 		this.data = {};
 		this.msd = NaN;
 		this.eventTargets = /* @__PURE__ */ new Map();
@@ -19918,7 +19919,7 @@ var ContentSteeringController = class extends Logger {
 		this.clearTimeout();
 		if (this.enabled && this.uri) {
 			if (this.updated) {
-				const ttl = this.timeToLoad * 1e3 - (performance.now() - this.updated);
+				const ttl = this.timeToLoad * 1e3 - (performance_default.now() - this.updated);
 				if (ttl > 0) {
 					this.scheduleRefresh(this.uri, ttl);
 					return;
@@ -19982,7 +19983,7 @@ var ContentSteeringController = class extends Logger {
 				if (groupId && levels) errorPathway = this.getPathwayForGroupId(groupId, type, errorPathway);
 				else if (pathwayId) errorPathway = pathwayId;
 			}
-			if (!(errorPathway in this.penalizedPathways)) this.penalizedPathways[errorPathway] = performance.now();
+			if (!(errorPathway in this.penalizedPathways)) this.penalizedPathways[errorPathway] = performance_default.now();
 			if (!pathwayPriority && levels) pathwayPriority = this.pathways();
 			if (pathwayPriority && pathwayPriority.length > 1) {
 				this.updatePathwayPriority(pathwayPriority);
@@ -20011,7 +20012,7 @@ var ContentSteeringController = class extends Logger {
 		this._pathwayPriority = pathwayPriority;
 		let levels;
 		const penalizedPathways = this.penalizedPathways;
-		const now = performance.now();
+		const now = performance_default.now();
 		Object.keys(penalizedPathways).forEach((pathwayId) => {
 			if (now - penalizedPathways[pathwayId] > PATHWAY_PENALTY_DURATION_MS) delete penalizedPathways[pathwayId];
 		});
@@ -20122,7 +20123,7 @@ var ContentSteeringController = class extends Logger {
 					this.log(`Steering VERSION ${steeringData.VERSION} not supported!`);
 					return;
 				}
-				this.updated = performance.now();
+				this.updated = performance_default.now();
 				this.timeToLoad = steeringData.TTL;
 				const { "RELOAD-URI": reloadUri, "PATHWAY-CLONES": pathwayClones, "PATHWAY-PRIORITY": pathwayPriority } = steeringData;
 				if (reloadUri) try {
@@ -21277,7 +21278,7 @@ var FPSController = class {
 		this.media = null;
 	}
 	checkFPS(video, decodedFrames, droppedFrames) {
-		const currentTime = performance.now();
+		const currentTime = performance_default.now();
 		if (decodedFrames) {
 			if (this.lastTime) {
 				const currentPeriod = currentTime - this.lastTime;
@@ -27617,7 +27618,7 @@ var SubtitleStreamController = class extends BaseStreamController {
 	}
 	decryptPayload(payload, frag, part) {
 		const decryptData = frag.decryptdata;
-		const tstart = performance.now();
+		const tstart = performance_default.now();
 		this.decrypter.decrypt(new Uint8Array(payload), decryptData.key.buffer, decryptData.iv.buffer, getAesModeFromFullSegmentMethod(decryptData.method)).then((plaintext) => {
 			if (this.fragContextChanged(frag)) return;
 			this.hls.trigger(Events.FRAG_DECRYPTED, {
@@ -27626,7 +27627,7 @@ var SubtitleStreamController = class extends BaseStreamController {
 				payload: plaintext,
 				stats: {
 					tstart,
-					tdecrypt: performance.now()
+					tdecrypt: performance_default.now()
 				}
 			});
 		}).catch((err) => {
@@ -30089,7 +30090,7 @@ var LevelController = class extends BasePlaylistController {
 					});
 				}
 			});
-			statsParsing.end = performance.now();
+			statsParsing.end = performance_default.now();
 			return;
 		}
 		if (data.audioTracks) {
@@ -30160,7 +30161,7 @@ var LevelController = class extends BasePlaylistController {
 			video: videoCodecFound,
 			altAudio: altAudioEnabled && !audioOnly && audioTracks.some((t) => !!t.url)
 		};
-		statsParsing.end = performance.now();
+		statsParsing.end = performance_default.now();
 		this.hls.trigger(Events.MANIFEST_PARSED, edata);
 	}
 	get iframeVariants() {
@@ -30344,7 +30345,7 @@ var LevelController = class extends BasePlaylistController {
 		if (this.manualLevelIndex === -1 && nextLevel !== currentLevel && nextLevel !== -1) {
 			const abrSwitchInterval = this.hls.config.abrSwitchInterval;
 			if (abrSwitchInterval > 0) {
-				const now = performance.now();
+				const now = performance_default.now();
 				const delta = now - this.lastABRSwitchTime;
 				const intervalMs = abrSwitchInterval * 1e3;
 				if (this.lastABRSwitchTime > -1 && delta < intervalMs) {
@@ -30782,7 +30783,7 @@ var PlaylistLoader = class {
 				const loader = this.getInternalLoader(context);
 				this.resetInternalLoader(context.type);
 				const string = response.data;
-				stats.parsing.start = performance.now();
+				stats.parsing.start = performance_default.now();
 				if (M3U8Parser.isMediaPlaylist(string) || context.type !== LoaderContextType.MANIFEST) this.handleTrackOrLevelPlaylist(response, stats, context, networkDetails || null, loader);
 				else this.handleMasterPlaylist(response, stats, context, networkDetails);
 			},
@@ -30808,7 +30809,7 @@ var PlaylistLoader = class {
 		const url = getResponseUrl(response, context);
 		const parsedResult = M3U8Parser.parseMasterPlaylist(string, url);
 		if (parsedResult.playlistParsingError) {
-			stats.parsing.end = performance.now();
+			stats.parsing.end = performance_default.now();
 			this.handleManifestParsingError(response, context, parsedResult.playlistParsingError, networkDetails, stats);
 			return;
 		}
@@ -30897,7 +30898,7 @@ var PlaylistLoader = class {
 				variableList: null
 			});
 		}
-		stats.parsing.end = performance.now();
+		stats.parsing.end = performance_default.now();
 		context.levelDetails = levelDetails;
 		this.handlePlaylistLoaded(levelDetails, response, stats, context, networkDetails, loader);
 	}

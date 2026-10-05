@@ -3,6 +3,7 @@ import { a as objectType, o as stringType } from "../_libs/zod.mjs";
 import { r as getRequestIP$1 } from "./request-response-CG_yhwzM.mjs";
 import { t as createServerRpc } from "./createServerRpc-CxD4EZ5P.mjs";
 import { d as q, f as q1, g as sweepExpired, l as maskKey, m as ready, o as hashKey, p as rateLimit } from "./ratelimit.server-H848KJku.mjs";
+import processModule from "node:process";
 //#region node_modules/.nitro/vite/services/ssr/assets/public.functions-uNLPemjn.js
 var getPublicCatalog_createServerFn_handler = createServerRpc({
 	id: "214c12e79391c07c82385477b09386591409c9714b8ff62f7dc301203190b0b8",
@@ -18,7 +19,7 @@ var getPublicCatalog = createServerFn({ method: "GET" }).handler(getPublicCatalo
 		plans,
 		brand: s["brand_name"] ?? "MAXON PLAY",
 		whatsapp: (() => {
-			const d = (s["whatsapp_number"] || process.env["WHATSAPP_NUMBER"] || "").replace(/\D/g, "");
+			const d = (s["whatsapp_number"] || processModule.env["WHATSAPP_NUMBER"] || "").replace(/\D/g, "");
 			return d.length >= 10 && d.length <= 15 ? d : "";
 		})(),
 		whatsappMessage: s["whatsapp_message"] ?? "",

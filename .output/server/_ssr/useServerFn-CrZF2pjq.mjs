@@ -1,6 +1,6 @@
 import { o as __toESM } from "../_runtime.mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { U as isRedirect, b as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
+import { G as isRedirect, b as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/useServerFn-CrZF2pjq.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 function useServerFn(serverFn) {
