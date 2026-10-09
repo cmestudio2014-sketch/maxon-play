@@ -230,6 +230,60 @@ export const listDevices = createServerFn({ method: "GET" }).handler(async () =>
      FROM devices d ORDER BY d.last_seen_at DESC NULLS LAST LIMIT 500`,
   );
 });
+export const activateDeviceByDisplayId = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z.object({
+      display_id: z.string().trim().min(4).max(40),
+      customer_id: uuid.nullable(),
+      plan_id: uuid,
+      source_id: uuid.nullable().default(null),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const u = await requireAdmin();
+    const displayId = data.display_id.trim().toUpperCase();
+    let device = await q1<{ id: string }>(
+      "SELECT id FROM devices WHERE upper(display_id)=upper($1)",
+      [displayId],
+    );
+    if (!device) {
+      device = await q1<{ id: string }>(
+        `INSERT INTO devices(display_id,platform,model,app_version,status,last_seen_at)
+         VALUES ($1,'android','Aguardando aparelho','—','ativo',NULL) RETURNING id`,
+        [displayId],
+      );
+    }
+    const plan = await q1<{ duration_days: number }>(
+      "SELECT duration_days FROM plans WHERE id=$1 AND active",
+      [data.plan_id],
+    );
+    if (!plan) throw new Error("Plano não encontrado ou inativo.");
+    const existing = await q1<{ id: string }>(
+      "SELECT id FROM activations WHERE device_id=$1 AND status='ativa' AND expires_at > now() ORDER BY expires_at DESC LIMIT 1",
+      [device!.id],
+    );
+    if (existing) throw new Error("Este MAC / Device ID já possui uma ativação ativa.");
+
+    const key = generateActivationKey();
+    const activation = await q1<{ id: string }>(
+      `INSERT INTO activations(customer_id,plan_id,device_id,key_hash,key_last4,status,starts_at,expires_at,created_by,source_id)
+       VALUES ($1,$2,$3,$4,$5,'ativa',now(),now() + ($6 || ' days')::interval,$7,$8) RETURNING id`,
+      [data.customer_id,data.plan_id,device!.id,hashKey(key),key.slice(-4),String(plan.duration_days),u.id,data.source_id],
+    );
+    await q(
+      "UPDATE devices SET status='ativo', source_id=$2, config_rev=config_rev+1 WHERE id=$1",
+      [device!.id, data.source_id],
+    );
+    await audit({
+      ...actor(u),
+      action: "device.activate_by_display_id",
+      entity: "activation",
+      entityId: activation!.id,
+      details: { display_id: displayId, plan_id: data.plan_id },
+    });
+    return { ok: true, activation_id: activation!.id, device_id: device!.id };
+  });
+
 export const activateDeviceDirect = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
