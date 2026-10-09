@@ -16,6 +16,7 @@ import {
 } from "@/components/admin-ui";
 import { fmtDate, fmtDateTime } from "@/components/brand";
 import {
+  activateDeviceByDisplayId,
   activateDeviceDirect,
   assignSource,
   forceSync,
@@ -38,6 +39,7 @@ function Dispositivos() {
   const assign = useServerFn(assignSource);
   const sync = useServerFn(forceSync);
   const activateDirect = useServerFn(activateDeviceDirect);
+  const activateByDisplayId = useServerFn(activateDeviceByDisplayId);
   const act = useAction();
   const { data = [] } = useAdminQuery("devices", () => list());
   const { data: srcs = [] } = useAdminQuery("sources", () => sources());
@@ -45,6 +47,7 @@ function Dispositivos() {
   const { data: plans = [] } = useAdminQuery("plans", () => plansFn());
   const [search, setSearch] = useState("");
   const [activating, setActivating] = useState<Device | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
   const rows = data.filter((d) =>
     `${d.display_id} ${d.model} ${d.customer ?? ""}`.toLowerCase().includes(search.toLowerCase()),
   );
@@ -54,12 +57,15 @@ function Dispositivos() {
         title="Dispositivos"
         desc="O app registra o Device ID automaticamente. Receba o código do cliente e ative o aparelho diretamente aqui."
       />
-      <Input
-        placeholder="Buscar Device ID, modelo ou cliente"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 max-w-sm"
-      />
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Buscar Device ID, modelo ou cliente"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button variant="hero" onClick={() => setManualOpen(true)}>+ ATIVAR POR MAC / DEVICE ID</Button>
+      </div>
       <DataTable
         head={[
           "MAC / Device ID",
@@ -124,6 +130,18 @@ function Dispositivos() {
         ))}
       </DataTable>
 
+      <ManualActivationDialog
+        open={manualOpen}
+        customers={customers}
+        plans={plans.filter((p) => p.active)}
+        sources={srcs}
+        onClose={() => setManualOpen(false)}
+        onActivate={async (data: any) => {
+          const r = await act(activateByDisplayId({ data }), "MAC / Device ID ativado com sucesso.", ["devices", "activations"]);
+          if (r) setManualOpen(false);
+        }}
+      />
+
       <ActivateDeviceDialog
         device={activating}
         customers={customers}
@@ -178,6 +196,58 @@ function ActivateDeviceDialog({ device, customers, plans, sources, onClose, onAc
             onClick={() => onActivate({ device_id: device.id, customer_id: customerId || null, plan_id: planId, source_id: sourceId || null })}
           >
             ATIVAR DISPOSITIVO
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+function ManualActivationDialog({ open, customers, plans, sources, onClose, onActivate }: any) {
+  const [displayId, setDisplayId] = useState("");
+  const [customerId, setCustomerId] = useState("");
+  const [planId, setPlanId] = useState("");
+  const [sourceId, setSourceId] = useState("");
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Ativar por MAC / Device ID</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <Field label="MAC / Device ID">
+            <Input
+              autoFocus
+              placeholder="Ex.: 0A:95:91:80:D6:5D"
+              value={displayId}
+              onChange={(e) => setDisplayId(e.target.value.toUpperCase())}
+            />
+          </Field>
+          <Field label="Cliente">
+            <select className={selectCls} value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+              <option value="">Sem cliente</option>
+              {customers.filter((c: any) => c.status === "ativo").map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Plano">
+            <select className={selectCls} value={planId} onChange={(e) => setPlanId(e.target.value)}>
+              <option value="">Selecione o plano</option>
+              {plans.map((p: any) => <option key={p.id} value={p.id}>{p.name} — {p.duration_days} dias</option>)}
+            </select>
+          </Field>
+          <Field label="Fonte / Lista">
+            <select className={selectCls} value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
+              <option value="">Nenhuma / padrão</option>
+              {sources.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </Field>
+          <Button
+            className="w-full"
+            variant="hero"
+            disabled={!displayId.trim() || !planId}
+            onClick={() => onActivate({ display_id: displayId.trim(), customer_id: customerId || null, plan_id: planId, source_id: sourceId || null })}
+          >
+            ATIVAR MAC / DEVICE ID
           </Button>
         </div>
       </DialogContent>
