@@ -230,6 +230,59 @@ export const listDevices = createServerFn({ method: "GET" }).handler(async () =>
      FROM devices d ORDER BY d.last_seen_at DESC NULLS LAST LIMIT 500`,
   );
 });
+export const activateDeviceDirect = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        device_id: uuid,
+        customer_id: uuid.nullable(),
+        plan_id: uuid,
+        source_id: uuid.nullable().default(null),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const u = await requireAdmin();
+    const device = await q1<{ id: string; display_id: string }>(
+      "SELECT id, display_id FROM devices WHERE id=$1",
+      [data.device_id],
+    );
+    if (!device) throw new Error("Dispositivo não encontrado.");
+    const plan = await q1<{ duration_days: number }>(
+      "SELECT duration_days FROM plans WHERE id=$1 AND active",
+      [data.plan_id],
+    );
+    if (!plan) throw new Error("Plano não encontrado ou inativo.");
+
+    const key = generateActivationKey();
+    const r = await q1<{ id: string }>(
+      `INSERT INTO activations(customer_id,plan_id,device_id,key_hash,key_last4,status,starts_at,expires_at,created_by,source_id)
+       VALUES ($1,$2,$3,$4,$5,'ativa',now(),now() + ($6 || ' days')::interval,$7,$8) RETURNING id`,
+      [
+        data.customer_id,
+        data.plan_id,
+        data.device_id,
+        hashKey(key),
+        key.slice(-4),
+        String(plan.duration_days),
+        u.id,
+        data.source_id,
+      ],
+    );
+    await q(
+      "UPDATE devices SET status='ativo', source_id=$2, config_rev=config_rev+1 WHERE id=$1",
+      [data.device_id, data.source_id],
+    );
+    await audit({
+      ...actor(u),
+      action: "device.activate_direct",
+      entity: "activation",
+      entityId: r!.id,
+      details: { device_id: data.device_id, display_id: device.display_id, plan_id: data.plan_id },
+    });
+    return { ok: true, activation_id: r!.id };
+  });
+
 export const setDeviceStatus = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: uuid, status: z.enum(["ativo", "bloqueado"]) }).parse(d))
   .handler(async ({ data }) => {
