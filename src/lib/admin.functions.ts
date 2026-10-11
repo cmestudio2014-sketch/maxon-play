@@ -1081,3 +1081,66 @@ export const forceSync = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+export const generateMissingCustomerCredentials = createServerFn({ method: "POST" })
+  .handler(async () => {
+    const u = await requireAdmin();
+
+    const customers = await q<{
+      id: string;
+      app_username: string | null;
+      app_password: string | null;
+    }>(
+      `SELECT id, app_username, app_password
+       FROM customers
+       WHERE app_username IS NULL OR app_password IS NULL`
+    );
+
+    let updated = 0;
+
+    for (const customer of customers) {
+      let username = customer.app_username;
+
+      if (!username) {
+        for (let tentativa = 0; tentativa < 100; tentativa++) {
+          const candidato = String(Math.floor(10000 + Math.random() * 90000));
+
+          const existente = await q1<{ id: string }>(
+            `SELECT id FROM customers WHERE app_username=$1 LIMIT 1`,
+            [candidato],
+          );
+
+          if (!existente) {
+            username = candidato;
+            break;
+          }
+        }
+      }
+
+      if (!username) {
+        throw new Error("Nao foi possivel gerar usuario unico");
+      }
+
+      const password =
+        customer.app_password ??
+        String(Math.floor(10000 + Math.random() * 90000));
+
+      await q(
+        `UPDATE customers
+         SET app_username=$2, app_password=$3
+         WHERE id=$1`,
+        [customer.id, username, password],
+      );
+
+      updated++;
+    }
+
+    await audit({
+      ...actor(u),
+      action: "customer.credentials.backfill",
+      entity: "customer",
+      details: { updated },
+    });
+
+    return { ok: true, updated };
+  });
