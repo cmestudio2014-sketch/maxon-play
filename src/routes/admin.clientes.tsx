@@ -75,7 +75,7 @@ function Clientes() {
         className="mb-4 max-w-sm"
       />
       <DataTable
-        head={["Nome", "WhatsApp", "Email", "Ativações", "Status", "Desde", ""]}
+        head={["Nome", "WhatsApp", "Usuário", "Senha", "Email", "Ativações", "Status", "Desde", ""]}
         empty={rows.length === 0}
       >
         {rows.map((c) => (
@@ -91,6 +91,8 @@ function Clientes() {
                 {c.whatsapp}
               </a>
             </Td>
+              <Td className="font-mono font-semibold">{c.app_username ?? "—"}</Td>
+              <Td className="font-mono font-semibold">{c.app_password ?? "—"}</Td>
             <Td>{c.email ?? "—"}</Td>
             <Td>{c.activations}</Td>
             <Td>
@@ -98,9 +100,25 @@ function Clientes() {
             </Td>
             <Td>{fmtDate(c.created_at)}</Td>
             <Td>
-              <Button size="sm" variant="secondary" onClick={() => edit(c)}>
-                Editar
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={() => edit(c)}>
+                  Editar
+                </Button>
+
+                {c.whatsapp && c.app_username && c.app_password && (
+                  <a
+                    href={`https://wa.me/${c.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
+                      `Olá ${c.name}! Sua MAXON PLAY está ativa.\n\nUsuário: ${c.app_username}\nSenha: ${c.app_password}\n\nBom entretenimento!`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Button size="sm" variant="hero">
+                      WhatsApp
+                    </Button>
+                  </a>
+                )}
+              </div>
             </Td>
           </tr>
         ))}

@@ -196,9 +196,42 @@ export const saveCustomer = createServerFn({ method: "POST" })
       });
       return { id: data.id };
     }
+    let appUsername = "";
+    let appPassword = "";
+
+    for (let tentativa = 0; tentativa < 100; tentativa++) {
+      const candidato = String(Math.floor(10000 + Math.random() * 90000));
+      const existente = await q1<{ id: string }>(
+        `SELECT id FROM customers WHERE app_username=$1 LIMIT 1`,
+        [candidato],
+      );
+
+      if (!existente) {
+        appUsername = candidato;
+        break;
+      }
+    }
+
+    if (!appUsername) {
+      throw new Error("Nao foi possivel gerar usuario unico");
+    }
+
+    appPassword = String(Math.floor(10000 + Math.random() * 90000));
+
     const r = await q1<{ id: string }>(
-      "INSERT INTO customers(name,whatsapp,email,notes,status) VALUES ($1,$2,$3,$4,$5) RETURNING id",
-      [data.name, data.whatsapp, email, data.notes, data.status],
+      `INSERT INTO customers
+       (name,whatsapp,email,notes,status,app_username,app_password)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING id`,
+      [
+        data.name,
+        data.whatsapp,
+        email,
+        data.notes,
+        data.status,
+        appUsername,
+        appPassword,
+      ],
     );
     await audit({ ...actor(u), action: "customer.create", entity: "customer", entityId: r!.id });
     return { id: r!.id };
