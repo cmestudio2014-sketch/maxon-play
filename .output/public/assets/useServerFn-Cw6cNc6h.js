@@ -1,0 +1,1 @@
+import{r as e,t}from"./react-yIOJJ3r4.js";import{it as n,nt as r}from"./index-CvSG2Mim.js";var i=e(t(),1);function a(e){let t=r();return i.useCallback(async(...r)=>{try{let t=await e(...r);if(n(t))throw t;return t}catch(e){if(n(e))return e.options._fromLocation=t.stores.location.get(),t.navigate(t.resolveRedirect(e).options);throw e}},[t,e])}export{a as t};

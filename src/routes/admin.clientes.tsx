@@ -17,7 +17,7 @@ import {
   useAdminQuery,
 } from "@/components/admin-ui";
 import { fmtDate } from "@/components/brand";
-import { listCustomers, saveCustomer, type Customer } from "@/lib/admin.functions";
+import { listCustomers, saveCustomer, generateMissingCustomerCredentials, type Customer } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin/clientes")({ component: Clientes });
 
@@ -34,6 +34,7 @@ const empty: Form = { name: "", whatsapp: "", email: "", notes: "", status: "ati
 function Clientes() {
   const list = useServerFn(listCustomers);
   const save = useServerFn(saveCustomer);
+  const generateCredentials = useServerFn(generateMissingCustomerCredentials);
   const act = useAction();
   const { data = [] } = useAdminQuery("customers", () => list());
   const [form, setForm] = useState<Form | null>(null);
@@ -62,10 +63,23 @@ function Clientes() {
         title="Clientes"
         desc={`${data.length} cadastrados`}
         action={
-          <Button variant="hero" onClick={() => setForm(empty)}>
-            <Plus />
-            Novo cliente
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                const r = await generateCredentials();
+                alert(`Credenciais geradas para ${r.updated} cliente(s).`);
+                window.location.reload();
+              }}
+            >
+              Gerar credenciais antigas
+            </Button>
+
+            <Button variant="hero" onClick={() => setForm(empty)}>
+              <Plus />
+              Novo cliente
+            </Button>
+          </div>
         }
       />
       <Input
