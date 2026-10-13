@@ -1,1 +1,0 @@
-import{vt as e}from"./index-BK4Z9zYe.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`p-10 text-center`,children:`Não foi possível carregar os planos.`});export{n as errorComponent};
