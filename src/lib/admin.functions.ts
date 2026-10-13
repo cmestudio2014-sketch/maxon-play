@@ -237,6 +237,27 @@ export const saveCustomer = createServerFn({ method: "POST" })
     return { id: r!.id };
   });
 
+const DeleteCustomerInput = z.object({ id: uuid });
+export const deleteCustomer = createServerFn({ method: "POST" })
+  .inputValidator((d) => DeleteCustomerInput.parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin();
+    const linked = await q1<{ activations: number; sales: number; sources: number }>(
+      `SELECT
+        (SELECT count(*)::int FROM activations WHERE customer_id=$1) AS activations,
+        (SELECT count(*)::int FROM sales WHERE customer_id=$1) AS sales,
+        (SELECT count(*)::int FROM sources WHERE customer_id=$1) AS sources`,
+      [data.id],
+    );
+    const total = (linked?.activations ?? 0) + (linked?.sales ?? 0) + (linked?.sources ?? 0);
+    if (total > 0) {
+      throw new Error("Este cliente possui ativações, vendas ou fontes vinculadas. Remova os vínculos antes de excluir.");
+    }
+    await q("DELETE FROM customers WHERE id=$1", [data.id]);
+    await audit({ ...actor(u), action: "customer.delete", entity: "customer", entityId: data.id });
+    return { id: data.id };
+  });
+
 // ---------------- Dispositivos ----------------
 export type Device = {
   source_id: string | null;
