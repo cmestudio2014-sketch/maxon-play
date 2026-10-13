@@ -1,15 +1,15 @@
 import { o as __toESM } from "../_runtime.mjs";
-import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
-import { t as useServerFn } from "./useServerFn-CrZF2pjq.mjs";
-import { k as listSources, l as deleteSource, x as listCustomers } from "./admin.functions-CTwvGmNE.mjs";
-import { t as Button } from "./button-CTmx8QDF.mjs";
+import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { a as Td, c as useAction, l as useAdminQuery, r as PageHeader, t as DataTable } from "./admin-ui-C_f-BTaD.mjs";
+import { t as useServerFn } from "./useServerFn-CrZF2pjq.mjs";
+import { k as listSources, l as deleteSource, x as listCustomers } from "./admin.functions-mjSXHvmn.mjs";
+import { t as Button } from "./button-CTmx8QDF.mjs";
 import { o as fmtDateTime } from "./brand-DsXviQDH.mjs";
 import { g as Plus, u as ShieldCheck } from "../_libs/lucide-react.mjs";
 import { i as DialogTitle, n as DialogContent, r as DialogHeader, t as Dialog } from "./dialog-B69u1cPq.mjs";
-import { t as SourceForm } from "./source-form-BI7v2k6D.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin.fontes-BOADAIBb.js
+import { t as SourceForm } from "./source-form-CTSFB_hg.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/admin.fontes-DwAKWD5g.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function Fontes() {

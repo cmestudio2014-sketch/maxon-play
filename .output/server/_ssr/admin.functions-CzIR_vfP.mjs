@@ -5,7 +5,7 @@ import { t as createServerRpc } from "./createServerRpc-CxD4EZ5P.mjs";
 import { _ as verifyJwt, a as generateActivationKey, c as isProduction, d as q, f as q1, g as sweepExpired, h as signJwt, i as env, m as ready, o as hashKey, p as rateLimit, s as hashPassword, u as orderNumber, v as verifyPassword } from "./ratelimit.server-Bwk2PF-V.mjs";
 import { t as audit } from "./audit.server-Oy8fc_dY.mjs";
 import { hasAnyAdmin } from "./bootstrap.server-BQbw6Uxm.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin.functions-CuP6DlsS.js
+//#region node_modules/.nitro/vite/services/ssr/assets/admin.functions-CzIR_vfP.js
 var COOKIE = "maxon_session";
 var TTL = 28800;
 function startSession(user) {
@@ -1418,6 +1418,7 @@ var uploadM3uSource = createServerFn({ method: "POST" }).inputValidator((d) => o
 	]);
 	if (!source) throw new Error("Não foi possível criar a fonte.");
 	let pending = null, count = 0;
+	const parsed = [];
 	const seriesRx = /\b(series?|séries?|temporadas?|novelas?|animes?)\b|\bs\d{1,2}\b|\btemporada\b/i;
 	const movieRx = /\b(filmes?|movies?|cinema|vod)\b/i;
 	for (const line0 of lines) {
@@ -1434,19 +1435,28 @@ var uploadM3uSource = createServerFn({ method: "POST" }).inputValidator((d) => o
 		const probe = (pending.name + " " + pending.category).toLowerCase();
 		const kind = seriesRx.test(probe) ? "series" : movieRx.test(probe) ? "movie" : "live";
 		const key = createHash("sha256").update(line).digest("hex").slice(0, 32);
-		await q(`INSERT INTO source_catalog_items(source_id,external_key,kind,name,category,stream_ref_enc)
-        VALUES($1,$2,$3,$4,$5,$6)
-        ON CONFLICT(source_id,external_key) DO UPDATE SET kind=EXCLUDED.kind,name=EXCLUDED.name,category=EXCLUDED.category,stream_ref_enc=EXCLUDED.stream_ref_enc,imported_at=now()`, [
-			source.id,
+		parsed.push({
 			key,
 			kind,
-			pending.name,
-			pending.category,
-			encryptSecret(line)
-		]);
-		count++;
+			name: pending.name,
+			category: pending.category,
+			enc: encryptSecret(line)
+		});
 		pending = null;
-		if (count >= 3e4) break;
+		if (parsed.length >= 3e4) break;
+	}
+	for (let offset = 0; offset < parsed.length; offset += 200) {
+		const batch = parsed.slice(offset, offset + 200);
+		const params = [];
+		const values = batch.map((x, i) => {
+			const n = i * 6;
+			params.push(source.id, x.key, x.kind, x.name, x.category, x.enc);
+			return `($${n + 1},$${n + 2},$${n + 3},$${n + 4},$${n + 5},$${n + 6})`;
+		}).join(",");
+		await q(`INSERT INTO source_catalog_items(source_id,external_key,kind,name,category,stream_ref_enc)
+        VALUES ${values}
+        ON CONFLICT(source_id,external_key) DO UPDATE SET kind=EXCLUDED.kind,name=EXCLUDED.name,category=EXCLUDED.category,stream_ref_enc=EXCLUDED.stream_ref_enc,imported_at=now()`, params);
+		count += batch.length;
 	}
 	if (!count) {
 		await q("DELETE FROM sources WHERE id=$1", [source.id]);

@@ -1,7 +1,7 @@
 import { l as createServerFn } from "./createServerFn-DDDJMFWM.mjs";
-import { t as createSsrRpc } from "./createSsrRpc-ChGFHl54.mjs";
+import { t as createSsrRpc } from "./createSsrRpc-SDr8lVrf.mjs";
 import { a as numberType, c as unionType, i as literalType, n as booleanType, o as objectType, r as enumType, s as stringType, t as arrayType } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin.functions-CTwvGmNE.js
+//#region node_modules/.nitro/vite/services/ssr/assets/admin.functions-mjSXHvmn.js
 var uuid = stringType().uuid();
 var getSession = createServerFn({ method: "GET" }).handler(createSsrRpc("dc54eae1edc361315022ee97c40ae4ea0f12ea2cc904d1487c081fb538f9c5b6"));
 var login = createServerFn({ method: "POST" }).inputValidator((d) => objectType({

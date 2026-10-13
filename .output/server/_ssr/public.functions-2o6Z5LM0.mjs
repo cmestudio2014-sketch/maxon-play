@@ -1,7 +1,7 @@
 import { l as createServerFn } from "./createServerFn-DDDJMFWM.mjs";
-import { t as createSsrRpc } from "./createSsrRpc-ChGFHl54.mjs";
+import { t as createSsrRpc } from "./createSsrRpc-SDr8lVrf.mjs";
 import { o as objectType, s as stringType } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/public.functions-XEcwin8n.js
+//#region node_modules/.nitro/vite/services/ssr/assets/public.functions-2o6Z5LM0.js
 /** Dados públicos: planos ativos + configurações não sensíveis. */
 var getPublicCatalog = createServerFn({ method: "GET" }).handler(createSsrRpc("214c12e79391c07c82385477b09386591409c9714b8ff62f7dc301203190b0b8"));
 /** Área do cliente: consulta pela KEY. Retorna apenas dados mascarados. */

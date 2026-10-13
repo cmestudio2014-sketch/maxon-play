@@ -1,17 +1,17 @@
 import { o as __toESM } from "../_runtime.mjs";
-import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { _ as createFileRoute, b as useRouter, d as Scripts, f as HeadContent, g as lazyRouteComponent, h as Outlet, m as createRouter, v as createRootRouteWithContext, y as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
-import { o as objectType, r as enumType, s as stringType } from "../_libs/zod.mjs";
-import { t as Route$26 } from "./admin-DxYAFGX0.mjs";
+import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
 import { i as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
+import { _ as createFileRoute, b as useRouter, d as Scripts, f as HeadContent, g as lazyRouteComponent, h as Outlet, m as createRouter, v as createRootRouteWithContext, y as Link } from "../_libs/@tanstack/react-router+[...].mjs";
+import { o as objectType, r as enumType, s as stringType } from "../_libs/zod.mjs";
+import { t as Route$26 } from "./admin-CkMb7_YV.mjs";
 import { _ as verifyJwt, d as q, f as q1, g as sweepExpired, h as signJwt, l as maskKey, m as ready, n as dbKind, o as hashKey, p as rateLimit, r as displayIdFor, t as corsOrigins } from "./ratelimit.server-Bwk2PF-V.mjs";
 import { t as audit } from "./audit.server-Oy8fc_dY.mjs";
-import { t as catalogQuery } from "./planos-B7Q9Wk-j.mjs";
+import { t as catalogQuery } from "./planos-CexJWxYC.mjs";
 import { t as deviceConfig } from "./sources.server-CRJr63sN.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-Bp6t9Zn_.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-BcBSzNxk.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var Toaster$1 = ({ ...props }) => {
@@ -220,7 +220,7 @@ var Route$23 = createFileRoute("/ativar")({
 	] }),
 	component: lazyRouteComponent($$splitComponentImporter$16, "component")
 });
-var $$splitComponentImporter$15 = () => import("./cliente-siS8l8wg.mjs");
+var $$splitComponentImporter$15 = () => import("./cliente-CiT-B0uC.mjs");
 var Route$22 = createFileRoute("/cliente")({
 	head: () => ({ meta: [
 		{ title: "Minha conta — MAXON PLAY" },
@@ -263,7 +263,7 @@ var Route$21 = createFileRoute("/health")({ server: { handlers: { GET: async () 
 } } } });
 var $$splitNotFoundComponentImporter = () => import("./planos-CpEeu-IK.mjs");
 var $$splitErrorComponentImporter = () => import("./planos-Cc85zH1S.mjs");
-var $$splitComponentImporter$14 = () => import("./planos-sx2c8zsP.mjs");
+var $$splitComponentImporter$14 = () => import("./planos-2b3TVji_.mjs");
 var Route$20 = createFileRoute("/planos")({
 	head: () => ({ meta: [
 		{ title: "Planos MAXON PLAY — 30 dias e 12 meses" },
@@ -305,31 +305,31 @@ var Route$19 = createFileRoute("/player")({
 	] }),
 	component: lazyRouteComponent($$splitComponentImporter$13, "component")
 });
-var $$splitComponentImporter$12 = () => import("./admin.index-CgwcEWT3.mjs");
+var $$splitComponentImporter$12 = () => import("./admin.index-DgPftugq.mjs");
 var Route$18 = createFileRoute("/admin/")({ component: lazyRouteComponent($$splitComponentImporter$12, "component") });
-var $$splitComponentImporter$11 = () => import("./admin.ativacoes-BdQa-CBf.mjs");
+var $$splitComponentImporter$11 = () => import("./admin.ativacoes-DUrAx9Ai.mjs");
 var Route$17 = createFileRoute("/admin/ativacoes")({ component: lazyRouteComponent($$splitComponentImporter$11, "component") });
-var $$splitComponentImporter$10 = () => import("./admin.auditoria-BFAeUSKg.mjs");
+var $$splitComponentImporter$10 = () => import("./admin.auditoria-DG31l-5H.mjs");
 var Route$16 = createFileRoute("/admin/auditoria")({ component: lazyRouteComponent($$splitComponentImporter$10, "component") });
-var $$splitComponentImporter$9 = () => import("./admin.clientes-CT-sLaK-.mjs");
+var $$splitComponentImporter$9 = () => import("./admin.clientes-rVss3lut.mjs");
 var Route$15 = createFileRoute("/admin/clientes")({ component: lazyRouteComponent($$splitComponentImporter$9, "component") });
-var $$splitComponentImporter$8 = () => import("./admin.configuracoes-3IgX0Vyq.mjs");
+var $$splitComponentImporter$8 = () => import("./admin.configuracoes-BSlVX6QI.mjs");
 var Route$14 = createFileRoute("/admin/configuracoes")({ component: lazyRouteComponent($$splitComponentImporter$8, "component") });
-var $$splitComponentImporter$7 = () => import("./admin.cupons-RyMHS1oZ.mjs");
+var $$splitComponentImporter$7 = () => import("./admin.cupons-ChtJD7HF.mjs");
 var Route$13 = createFileRoute("/admin/cupons")({ component: lazyRouteComponent($$splitComponentImporter$7, "component") });
-var $$splitComponentImporter$6 = () => import("./admin.dispositivos-BzJxMRLk.mjs");
+var $$splitComponentImporter$6 = () => import("./admin.dispositivos-CYHk7DhC.mjs");
 var Route$12 = createFileRoute("/admin/dispositivos")({ component: lazyRouteComponent($$splitComponentImporter$6, "component") });
-var $$splitComponentImporter$5 = () => import("./admin.editor-listas-BRBSPgFW.mjs");
+var $$splitComponentImporter$5 = () => import("./admin.editor-listas-DXUytBc9.mjs");
 var Route$11 = createFileRoute("/admin/editor-listas")({ component: lazyRouteComponent($$splitComponentImporter$5, "component") });
-var $$splitComponentImporter$4 = () => import("./admin.fontes-BOADAIBb.mjs");
+var $$splitComponentImporter$4 = () => import("./admin.fontes-DwAKWD5g.mjs");
 var Route$10 = createFileRoute("/admin/fontes")({ component: lazyRouteComponent($$splitComponentImporter$4, "component") });
-var $$splitComponentImporter$3 = () => import("./admin.planos-Bvwhs5sZ.mjs");
+var $$splitComponentImporter$3 = () => import("./admin.planos-DCU6hMnR.mjs");
 var Route$9 = createFileRoute("/admin/planos")({ component: lazyRouteComponent($$splitComponentImporter$3, "component") });
-var $$splitComponentImporter$2 = () => import("./admin.servidores-CANlDX5b.mjs");
+var $$splitComponentImporter$2 = () => import("./admin.servidores-BtzKGHEY.mjs");
 var Route$8 = createFileRoute("/admin/servidores")({ component: lazyRouteComponent($$splitComponentImporter$2, "component") });
-var $$splitComponentImporter$1 = () => import("./admin.usuarios-DvoE7CS6.mjs");
+var $$splitComponentImporter$1 = () => import("./admin.usuarios-CN-1BTCt.mjs");
 var Route$7 = createFileRoute("/admin/usuarios")({ component: lazyRouteComponent($$splitComponentImporter$1, "component") });
-var $$splitComponentImporter = () => import("./admin.vendas-BFWPi5wi.mjs");
+var $$splitComponentImporter = () => import("./admin.vendas-h2ZgqGoK.mjs");
 var Route$6 = createFileRoute("/admin/vendas")({ component: lazyRouteComponent($$splitComponentImporter, "component") });
 function corsHeaders(request) {
 	const origins = corsOrigins();
