@@ -1,9 +1,9 @@
 import { _ as createFileRoute, g as lazyRouteComponent } from "../_libs/@tanstack/react-router+[...].mjs";
-import { h as getSession } from "./admin.functions-DJuA1rp3.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin-DOkkWfDU.js
+import { h as getSession } from "./admin.functions-Dbww6VyV.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/admin-BR4hCizy.js
 var $$splitNotFoundComponentImporter = () => import("./admin-XSFcTZjy.mjs");
 var $$splitErrorComponentImporter = () => import("./admin-dRt9Haal.mjs");
-var $$splitComponentImporter = () => import("./admin-xCjBpqAT.mjs");
+var $$splitComponentImporter = () => import("./admin-CBzOWFwt.mjs");
 var Route = createFileRoute("/admin")({
 	head: () => ({ meta: [
 		{ title: "Painel — MAXON PLAY" },

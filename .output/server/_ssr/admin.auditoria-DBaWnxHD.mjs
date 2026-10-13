@@ -1,12 +1,12 @@
 import { o as __toESM } from "../_runtime.mjs";
-import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { a as Td, l as useAdminQuery, r as PageHeader, t as DataTable } from "./admin-ui-C_f-BTaD.mjs";
+import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { t as useServerFn } from "./useServerFn-CrZF2pjq.mjs";
-import { y as listAudit } from "./admin.functions-DJuA1rp3.mjs";
+import { y as listAudit } from "./admin.functions-Dbww6VyV.mjs";
 import { t as Input } from "./input-B8Q2ztVi.mjs";
+import { a as Td, l as useAdminQuery, r as PageHeader, t as DataTable } from "./admin-ui-C_f-BTaD.mjs";
 import { o as fmtDateTime } from "./brand-DsXviQDH.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin.auditoria-BFJFea6I.js
+//#region node_modules/.nitro/vite/services/ssr/assets/admin.auditoria-DBaWnxHD.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function Auditoria() {

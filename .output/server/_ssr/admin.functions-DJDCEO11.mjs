@@ -5,7 +5,7 @@ import { t as createServerRpc } from "./createServerRpc-CxD4EZ5P.mjs";
 import { _ as verifyJwt, a as generateActivationKey, c as isProduction, d as q, f as q1, g as sweepExpired, h as signJwt, i as env, m as ready, o as hashKey, p as rateLimit, s as hashPassword, u as orderNumber, v as verifyPassword } from "./ratelimit.server-B03r5lJD.mjs";
 import { t as audit } from "./audit.server-Cz6ldEmp.mjs";
 import { hasAnyAdmin } from "./bootstrap.server-CgDdwCDA.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin.functions-D5nzBZnp.js
+//#region node_modules/.nitro/vite/services/ssr/assets/admin.functions-DJDCEO11.js
 var COOKIE = "maxon_session";
 var TTL = 28800;
 function startSession(user) {
@@ -1074,9 +1074,11 @@ var importSourceCatalog = createServerFn({ method: "POST" }).inputValidator((d) 
 			const name = safeName(l.split(",").slice(1).join(","), "Canal");
 			const category = safeName(attr(l, "group-title"), "Sem categoria");
 			const key = createHash("sha256").update(stream).digest("hex").slice(0, 32);
+			const probe = (name + " " + category).toLowerCase();
+			const kindGuess = /\b(series?|séries?|temporadas?|novelas?|animes?)\b|\bs\d{1,2}\b|\btemporada\b/i.test(probe) ? "series" : /\b(filmes?|movies?|cinema|vod)\b/i.test(probe) ? "movie" : "live";
 			items.push({
 				external_key: key,
-				kind: "live",
+				kind: kindGuess,
 				name,
 				category,
 				stream_ref: stream

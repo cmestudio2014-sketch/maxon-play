@@ -1,13 +1,13 @@
 import { o as __toESM } from "../_runtime.mjs";
-import { a as Trigger2, i as Root2, n as Header, r as Item, t as Content2, v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { n as useSuspenseQuery } from "../_libs/tanstack__react-query.mjs";
+import { a as Trigger2, i as Root2, n as Header, r as Item, t as Content2, v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { t as cn } from "./utils-C_uf36nf.mjs";
 import { t as Button } from "./button-CTmx8QDF.mjs";
+import { n as useSuspenseQuery } from "../_libs/tanstack__react-query.mjs";
 import { i as brl, n as SiteFooter, r as SiteHeader } from "./brand-DsXviQDH.mjs";
 import { M as ChevronDown, N as Check, y as MessageCircle } from "../_libs/lucide-react.mjs";
-import { t as catalogQuery } from "./planos-CByTE3l-.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/planos-DELy2kud.js
+import { t as catalogQuery } from "./planos-B2FADFtN.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/planos-CuPjManY.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var Accordion = Root2;

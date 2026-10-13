@@ -1,12 +1,12 @@
 import { o as __toESM } from "../_runtime.mjs";
-import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
+import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { t as useServerFn } from "./useServerFn-CrZF2pjq.mjs";
 import { t as Button } from "./button-CTmx8QDF.mjs";
 import { t as Input } from "./input-B8Q2ztVi.mjs";
 import { a as fmtDate, n as SiteFooter, o as fmtDateTime, r as SiteHeader } from "./brand-DsXviQDH.mjs";
-import { n as lookupLicense } from "./public.functions-s2zw6Zgo.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/cliente-Hrx-bJ52.js
+import { n as lookupLicense } from "./public.functions-DXDU3K-G.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/cliente-CSZJikrm.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function Cliente() {

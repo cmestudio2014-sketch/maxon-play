@@ -1,14 +1,14 @@
 import { o as __toESM } from "../_runtime.mjs";
-import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
-import { a as Td, c as useAction, l as useAdminQuery, n as Field, r as PageHeader, t as DataTable } from "./admin-ui-C_f-BTaD.mjs";
+import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { t as useServerFn } from "./useServerFn-CrZF2pjq.mjs";
-import { E as listProviderServers, c as deleteProviderServer, q as testProviderServer, z as saveProviderServer } from "./admin.functions-DJuA1rp3.mjs";
+import { E as listProviderServers, c as deleteProviderServer, q as testProviderServer, z as saveProviderServer } from "./admin.functions-Dbww6VyV.mjs";
 import { t as Button } from "./button-CTmx8QDF.mjs";
 import { t as Input } from "./input-B8Q2ztVi.mjs";
+import { a as Td, c as useAction, l as useAdminQuery, n as Field, r as PageHeader, t as DataTable } from "./admin-ui-C_f-BTaD.mjs";
 import { F as Activity, f as Server, g as Plus, h as RefreshCw } from "../_libs/lucide-react.mjs";
 import { i as DialogTitle, n as DialogContent, r as DialogHeader, t as Dialog } from "./dialog-B69u1cPq.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin.servidores-CfDqvmnp.js
+//#region node_modules/.nitro/vite/services/ssr/assets/admin.servidores-B2A6HT7i.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function healthLabel(s) {
