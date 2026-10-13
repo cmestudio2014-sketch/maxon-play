@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, selectCls, useAction } from "@/components/admin-ui";
-import { saveSource, type Source } from "@/lib/admin.functions";
+import { saveSource, uploadM3uSource, type Source } from "@/lib/admin.functions";
 
 type F = {
   name: string;
@@ -30,9 +30,12 @@ export function SourceForm({
   onCancel?: () => void;
 }) {
   const save = useServerFn(saveSource);
+  const upload = useServerFn(uploadM3uSource);
   const act = useAction();
   const editing = !!source;
   const [cust, setCust] = useState<string | null>(source?.customer_id ?? customerId ?? null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [mode, setMode] = useState<"url" | "file">("url");
   const [f, setF] = useState<F>({
     name: source?.name ?? "",
     type: source?.type ?? "m3u",
@@ -44,6 +47,14 @@ export function SourceForm({
   });
   const keep = editing ? "Deixe em branco para manter o valor salvo" : undefined;
   const submit = async () => {
+    if (!editing && f.type === "m3u" && mode === "file") {
+      if (!uploadFile) return;
+      if (uploadFile.size > 8_000_000) { alert("Arquivo maior que 8 MB."); return; }
+      const content = await uploadFile.text();
+      const r = await act(upload({ data: { name:f.name, customer_id:cust, filename:uploadFile.name, content } }), "Arquivo M3U importado.", ["sources"]);
+      if (r) onSaved(r.id);
+      return;
+    }
     const r = await act(
       save({ data: { ...(source ? { id: source.id } : {}), ...f, customer_id: cust } }),
       "Fonte salva (criptografada).",
@@ -91,6 +102,13 @@ export function SourceForm({
       </Field>
       {f.type === "m3u" ? (
         <>
+          {!editing && <div className="grid grid-cols-2 gap-2">
+            <Button type="button" variant={mode==="url"?"hero":"secondary"} onClick={()=>setMode("url")}>URL M3U</Button>
+            <Button type="button" variant={mode==="file"?"hero":"secondary"} onClick={()=>setMode("file")}>Enviar arquivo M3U</Button>
+          </div>}
+          {mode==="file" && !editing ? <Field label="Arquivo .m3u / .m3u8" hint="Máximo 8 MB. O painel importa os itens e protege as URLs.">
+            <Input type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl" onChange={(e)=>setUploadFile(e.target.files?.[0]??null)} />
+          </Field> : <>
           <Field label="URL M3U" {...(keep ? { hint: keep } : {})}>
             <Input
               type="url"
@@ -108,6 +126,7 @@ export function SourceForm({
               autoComplete="off"
             />
           </Field>
+          </>}
         </>
       ) : (
         <>
@@ -141,10 +160,10 @@ export function SourceForm({
         <Button
           variant="hero"
           className="flex-1"
-          disabled={f.name.trim().length < 2}
+          disabled={f.name.trim().length < 2 || (!editing && f.type==="m3u" && mode==="file" && !uploadFile)}
           onClick={submit}
         >
-          Salvar fonte
+          {!editing && f.type==="m3u" && mode==="file" ? "Importar arquivo M3U" : "Salvar fonte"}
         </Button>
         {onCancel && (
           <Button variant="secondary" onClick={onCancel}>
