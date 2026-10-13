@@ -1,0 +1,1 @@
+import{tt as e}from"./index-CaUhYiuU.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`p-10 text-center`,children:`Página não encontrada.`});export{n as notFoundComponent};
