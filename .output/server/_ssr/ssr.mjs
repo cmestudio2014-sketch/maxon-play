@@ -93,7 +93,7 @@ function renderErrorPage() {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./server-OutGdPfu.mjs").then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./server-M8uNehll.mjs").then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 async function normalizeCatastrophicSsrResponse(response) {
@@ -137,58 +137,81 @@ function withSecurityHeaders(response, request) {
 	}
 }
 async function streamProxy(request) {
-	const u = new URL(request.url);
-	if (u.pathname !== "/api/stream-proxy") return null;
-	const raw = u.searchParams.get("url") ?? "";
+	const req = new URL(request.url);
+	if (req.pathname !== "/api/stream-proxy") return null;
+	const raw = req.searchParams.get("url") ?? "";
 	let target;
 	try {
 		target = new URL(raw);
 	} catch {
 		return new Response("URL inválida", { status: 400 });
 	}
-	if (target.protocol !== "http:" && target.protocol !== "https:") return new Response("Protocolo inválido", { status: 400 });
+	if (!["http:", "https:"].includes(target.protocol)) return new Response("Protocolo inválido", { status: 400 });
 	const host = target.hostname.toLowerCase();
 	if (host === "localhost" || host === "0.0.0.0" || host === "::1" || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)) return new Response("Host não permitido", { status: 403 });
-	const upstream = await fetch(target, {
-		headers: { ...request.headers.get("range") ? { range: request.headers.get("range") } : {} },
-		redirect: "follow",
-		signal: AbortSignal.timeout(15e3)
-	}).catch(() => null);
-	if (!upstream) return new Response("Servidor indisponível", { status: 502 });
+	const headers = {
+		"accept": request.headers.get("accept") ?? "*/*",
+		"user-agent": request.headers.get("user-agent") ?? "Mozilla/5.0 MAXON-PLAY"
+	};
+	const range = request.headers.get("range");
+	if (range) headers.range = range;
+	let upstream;
+	try {
+		upstream = await fetch(target, {
+			headers,
+			redirect: "follow",
+			signal: AbortSignal.timeout(2e4)
+		});
+	} catch {
+		return new Response("Servidor de origem indisponível", {
+			status: 502,
+			headers: { "x-maxon-proxy-error": "upstream-fetch" }
+		});
+	}
 	const ct = upstream.headers.get("content-type") ?? "";
-	if ((/mpegurl/i.test(ct) || /\.m3u8(?:[?#]|$)/i.test(target.href)) && upstream.ok) {
+	const finalUrl = upstream.url || target.href;
+	if ((/mpegurl|application\/vnd\.apple/i.test(ct) || /\.m3u8(?:[?#]|$)/i.test(finalUrl)) && upstream.ok) {
 		let body = await upstream.text();
+		const proxify = (value) => {
+			try {
+				return "/api/stream-proxy?url=" + encodeURIComponent(new URL(value, finalUrl).href);
+			} catch {
+				return value;
+			}
+		};
 		body = body.split(/\r?\n/).map((line) => {
 			const s = line.trim();
-			if (!s || s.startsWith("#")) return line;
-			try {
-				return "/api/stream-proxy?url=" + encodeURIComponent(new URL(s, target).href);
-			} catch {
-				return line;
-			}
+			if (!s) return line;
+			if (!s.startsWith("#")) return proxify(s);
+			return line.replace(/URI="([^"]+)"/g, (_m, uri) => "URI=\"" + proxify(uri) + "\"");
 		}).join("\n");
 		return new Response(body, {
 			status: upstream.status,
 			headers: {
 				"content-type": "application/vnd.apple.mpegurl",
-				"cache-control": "no-store"
+				"cache-control": "no-store",
+				"x-maxon-upstream-status": String(upstream.status)
 			}
 		});
 	}
-	const headers = new Headers();
+	const out = new Headers();
 	for (const h of [
 		"content-type",
 		"content-length",
 		"content-range",
-		"accept-ranges"
+		"accept-ranges",
+		"etag",
+		"last-modified"
 	]) {
 		const v = upstream.headers.get(h);
-		if (v) headers.set(h, v);
+		if (v) out.set(h, v);
 	}
-	headers.set("cache-control", "no-store");
+	out.set("cache-control", "no-store");
+	out.set("x-maxon-upstream-status", String(upstream.status));
 	return new Response(upstream.body, {
 		status: upstream.status,
-		headers
+		statusText: upstream.statusText,
+		headers: out
 	});
 }
 var server_default = { async fetch(request, env = {}, ctx = {}) {
