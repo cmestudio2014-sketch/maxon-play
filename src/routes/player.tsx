@@ -276,7 +276,19 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     let disposed = false;
     let hls: import("hls.js").default | null = null;
     let tsPlayer: { destroy: () => void } | null = null;
+    let startupTimer: ReturnType<typeof setTimeout> | null = null;
     setError("");
+
+    const armStartupWatch = (label: string) => {
+      if (startupTimer) clearTimeout(startupTimer);
+      startupTimer = setTimeout(() => {
+        if (!disposed && v.currentTime <= 0 && v.readyState < 3)
+          setError(label + " conectado, mas nenhum quadro reproduzível chegou em 12 segundos. Pode ser codec incompatível ou origem sem dados.");
+      }, 12000);
+    };
+    const clearStartupWatch = () => { if (startupTimer) { clearTimeout(startupTimer); startupTimer = null; } };
+    v.addEventListener("playing", clearStartupWatch);
+    v.addEventListener("loadeddata", clearStartupWatch);
 
     const original = item.url.trim();
     const candidates = /^https?:\/\//i.test(original) ? [original] : [];
@@ -301,6 +313,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
       if (hlsCandidate && Hls.isSupported()) {
         const h = new Hls({ enableWorker: true, lowLatencyMode: false, maxBufferLength: 30, manifestLoadingMaxRetry: 2, fragLoadingMaxRetry: 2 });
         hls = h;
+        armStartupWatch("HLS");
         h.on(Hls.Events.MANIFEST_PARSED, () => { if (!disposed) void v.play().catch(() => setError("Clique em reproduzir para iniciar.")); });
         h.on(Hls.Events.ERROR, (_event, data) => {
           if (!data.fatal || disposed) return;
@@ -359,8 +372,10 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
         if (!mpegts.isSupported()) { setError("MPEG-TS detectado, mas Media Source não é suportado."); return; }
         const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: proxy(candidates[0]) }, { enableWorker: false });
         tsPlayer = player; player.attachMediaElement(v); player.load();
+        armStartupWatch("MPEG-TS");
         void player.play().catch(() => setError("MPEG-TS detectado, mas a reprodução não iniciou.")); return;
       }
+      armStartupWatch("Stream");
       const ok = await playDirect(candidates[0]);
       if (!ok && !disposed) setError("Servidor respondeu HTTP " + (detected?.status ?? "?") + ", formato " + (detected?.format ?? "desconhecido") + ", tipo " + (detected?.contentType ?? "desconhecido") + ".");
     };
@@ -368,6 +383,9 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     void start().catch(() => { if (!disposed) setError("Falha ao iniciar o mecanismo de reprodução."); });
     return () => {
       disposed = true;
+      clearStartupWatch();
+      v.removeEventListener("playing", clearStartupWatch);
+      v.removeEventListener("loadeddata", clearStartupWatch);
       hls?.destroy();
       tsPlayer?.destroy();
       v.pause(); v.removeAttribute("src"); v.load();
