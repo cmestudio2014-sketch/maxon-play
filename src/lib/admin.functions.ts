@@ -1083,7 +1083,11 @@ export const importSourceCatalog = createServerFn({method:"POST"})
         const name=safeName(l.split(",").slice(1).join(","),"Canal");
         const category=safeName(attr(l,"group-title"),"Sem categoria");
         const key=createHash("sha256").update(stream).digest("hex").slice(0,32);
-        items.push({external_key:key,kind:"live",name,category,stream_ref:stream});
+        const probe=(name+" "+category).toLowerCase();
+        const movieRx=/\b(filmes?|movies?|cinema|vod)\b/i;
+        const seriesRx=/\b(series?|séries?|temporadas?|novelas?|animes?)\b|\bs\d{1,2}\b|\btemporada\b/i;
+        const kindGuess:"live"|"movie"|"series"=seriesRx.test(probe)?"series":movieRx.test(probe)?"movie":"live";
+        items.push({external_key:key,kind:kindGuess,name,category,stream_ref:stream});
       }
     } else {
       const base=p.server.replace(/\/+$/,""); const auth=`username=${encodeURIComponent(p.username)}&password=${encodeURIComponent(p.password)}`;
