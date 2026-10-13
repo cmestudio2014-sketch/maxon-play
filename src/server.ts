@@ -72,30 +72,70 @@ function withSecurityHeaders(response: Response, request: Request): Response {
 
 
 async function streamProxy(request: Request): Promise<Response | null> {
-  const u = new URL(request.url);
-  if (u.pathname !== "/api/stream-proxy") return null;
-  const raw = u.searchParams.get("url") ?? "";
+  const req = new URL(request.url);
+  if (req.pathname !== "/api/stream-proxy") return null;
+  const raw = req.searchParams.get("url") ?? "";
   let target: URL;
   try { target = new URL(raw); } catch { return new Response("URL inválida", { status: 400 }); }
-  if (target.protocol !== "http:" && target.protocol !== "https:") return new Response("Protocolo inválido", { status: 400 });
+  if (!["http:", "https:"].includes(target.protocol)) return new Response("Protocolo inválido", { status: 400 });
+
   const host = target.hostname.toLowerCase();
-  if (host === "localhost" || host === "0.0.0.0" || host === "::1" || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)) return new Response("Host não permitido", { status: 403 });
-  const upstream = await fetch(target, { headers: { ...(request.headers.get("range") ? { range: request.headers.get("range")! } : {}) }, redirect: "follow", signal: AbortSignal.timeout(15000) }).catch(() => null);
-  if (!upstream) return new Response("Servidor indisponível", { status: 502 });
-  const ct = upstream.headers.get("content-type") ?? "";
-  if ((/mpegurl/i.test(ct) || /\.m3u8(?:[?#]|$)/i.test(target.href)) && upstream.ok) {
-    let body = await upstream.text();
-    body = body.split(/\r?\n/).map(line => {
-      const s = line.trim();
-      if (!s || s.startsWith("#")) return line;
-      try { return "/api/stream-proxy?url=" + encodeURIComponent(new URL(s, target).href); } catch { return line; }
-    }).join("\n");
-    return new Response(body, { status: upstream.status, headers: { "content-type": "application/vnd.apple.mpegurl", "cache-control": "no-store" } });
+  if (host === "localhost" || host === "0.0.0.0" || host === "::1" ||
+      /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) ||
+      /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)) {
+    return new Response("Host não permitido", { status: 403 });
   }
-  const headers = new Headers();
-  for (const h of ["content-type","content-length","content-range","accept-ranges"]) { const v = upstream.headers.get(h); if (v) headers.set(h,v); }
-  headers.set("cache-control","no-store");
-  return new Response(upstream.body, { status: upstream.status, headers });
+
+  const headers: Record<string,string> = {
+    "accept": request.headers.get("accept") ?? "*/*",
+    "user-agent": request.headers.get("user-agent") ?? "Mozilla/5.0 MAXON-PLAY",
+  };
+  const range = request.headers.get("range");
+  if (range) headers.range = range;
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(target, { headers, redirect: "follow", signal: AbortSignal.timeout(20000) });
+  } catch {
+    return new Response("Servidor de origem indisponível", {
+      status: 502,
+      headers: { "x-maxon-proxy-error": "upstream-fetch" },
+    });
+  }
+
+  const ct = upstream.headers.get("content-type") ?? "";
+  const finalUrl = upstream.url || target.href;
+  const isPlaylist = /mpegurl|application\/vnd\.apple/i.test(ct) || /\.m3u8(?:[?#]|$)/i.test(finalUrl);
+
+  if (isPlaylist && upstream.ok) {
+    let body = await upstream.text();
+    const proxify = (value: string) => {
+      try { return "/api/stream-proxy?url=" + encodeURIComponent(new URL(value, finalUrl).href); }
+      catch { return value; }
+    };
+    body = body.split(/\r?\n/).map((line) => {
+      const s = line.trim();
+      if (!s) return line;
+      if (!s.startsWith("#")) return proxify(s);
+      return line.replace(/URI="([^"]+)"/g, (_m, uri: string) => 'URI="' + proxify(uri) + '"');
+    }).join("\n");
+    return new Response(body, {
+      status: upstream.status,
+      headers: {
+        "content-type": "application/vnd.apple.mpegurl",
+        "cache-control": "no-store",
+        "x-maxon-upstream-status": String(upstream.status),
+      },
+    });
+  }
+
+  const out = new Headers();
+  for (const h of ["content-type","content-length","content-range","accept-ranges","etag","last-modified"]) {
+    const v = upstream.headers.get(h); if (v) out.set(h, v);
+  }
+  out.set("cache-control", "no-store");
+  out.set("x-maxon-upstream-status", String(upstream.status));
+  return new Response(upstream.body, { status: upstream.status, statusText: upstream.statusText, headers: out });
 }
 
 export default {
