@@ -939,14 +939,75 @@ export type ProviderServer = {
   priority: number;
   active: boolean;
   updated_at: string;
+  health_status: string | null;
+  health_http: number | null;
+  health_latency_ms: number | null;
+  health_checked_at: string | null;
 };
 export const listProviderServers = createServerFn({ method: "GET" }).handler(async () => {
   await requireAdmin();
   return q<ProviderServer>(
-    "SELECT id,name,base_url,priority,active,updated_at::text AS updated_at FROM provider_servers ORDER BY priority,name",
+    "SELECT id,name,base_url,priority,active,updated_at::text AS updated_at,health_status,health_http,health_latency_ms,health_checked_at::text AS health_checked_at FROM provider_servers ORDER BY priority,name",
   );
 });
 const providerServerUrl = z.string().trim().url().max(500).refine((u) => /^https?:\/\//i.test(u), "Use http(s)://");
+
+function privateIp(ip: string): boolean {
+  const x = ip.toLowerCase();
+  if (x === "::1" || x === "0.0.0.0" || x.startsWith("127.") || x.startsWith("10.") || x.startsWith("192.168.") || x.startsWith("169.254.")) return true;
+  const m = x.match(/^172\.(\d+)\./);
+  if (m && Number(m[1]) >= 16 && Number(m[1]) <= 31) return true;
+  if (x.startsWith("fc") || x.startsWith("fd") || x.startsWith("fe80:")) return true;
+  return false;
+}
+async function assertPublicHost(url: URL): Promise<void> {
+  const { lookup } = await import("node:dns/promises");
+  const { isIP } = await import("node:net");
+  if (["localhost", "localhost.localdomain"].includes(url.hostname.toLowerCase())) throw new Error("Destino local não permitido.");
+  const addresses = isIP(url.hostname) ? [{ address: url.hostname }] : await lookup(url.hostname, { all: true });
+  if (!addresses.length || addresses.some((a) => privateIp(a.address))) throw new Error("Destino privado/local não permitido.");
+}
+async function probeServer(baseUrl: string) {
+  let current = new URL(baseUrl);
+  const started = Date.now();
+  let response: Response | null = null;
+  for (let redirect = 0; redirect < 4; redirect++) {
+    await assertPublicHost(current);
+    response = await fetch(current, {
+      method: "GET",
+      redirect: "manual",
+      signal: AbortSignal.timeout(8000),
+      headers: { "user-agent": "MAXON-PLAY-ServerCheck/1.0", accept: "*/*" },
+    });
+    if (![301,302,303,307,308].includes(response.status)) break;
+    const location = response.headers.get("location");
+    if (!location) break;
+    current = new URL(location, current);
+  }
+  const latency = Date.now() - started;
+  const http = response?.status ?? null;
+  const status = http && http >= 200 && http < 400 ? "online" : http ? "respondeu" : "offline";
+  try { await response?.body?.cancel(); } catch {}
+  return { status, http, latency };
+}
+export const testProviderServer = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin(["admin"]);
+    const row = await q1<{ id:string; name:string; base_url:string }>("SELECT id,name,base_url FROM provider_servers WHERE id=$1", [data.id]);
+    if (!row) throw new Error("Servidor não encontrado.");
+    let result: { status: string; http: number | null; latency: number | null; error?: string };
+    try {
+      const r = await probeServer(row.base_url);
+      result = { status: r.status, http: r.http, latency: r.latency };
+    } catch (e) {
+      result = { status: "offline", http: null, latency: null, error: e instanceof Error ? e.message : "Falha no teste" };
+    }
+    await q("UPDATE provider_servers SET health_status=$2,health_http=$3,health_latency_ms=$4,health_checked_at=now() WHERE id=$1",
+      [data.id,result.status,result.http,result.latency]);
+    await audit({ ...actor(u), action: "server.test", entity: "provider_server", entityId: data.id, details: { status: result.status, http: result.http, latency_ms: result.latency } });
+    return result;
+  });
 export const saveProviderServer = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     id: uuid.optional(),
@@ -960,7 +1021,7 @@ export const saveProviderServer = createServerFn({ method: "POST" })
     const baseUrl = data.base_url.replace(/\/+$/, "");
     let id = data.id;
     if (id) {
-      await q("UPDATE provider_servers SET name=$2,base_url=$3,priority=$4,active=$5,updated_at=now() WHERE id=$1",
+      await q("UPDATE provider_servers SET name=$2,base_url=$3,priority=$4,active=$5,health_status=NULL,health_http=NULL,health_latency_ms=NULL,health_checked_at=NULL,updated_at=now() WHERE id=$1",
         [id,data.name,baseUrl,data.priority,data.active]);
     } else {
       id = (await q1<{id:string}>("INSERT INTO provider_servers(name,base_url,priority,active) VALUES ($1,$2,$3,$4) RETURNING id",
