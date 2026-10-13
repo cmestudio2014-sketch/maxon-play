@@ -1,83 +1,38 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { Layers3, Plus, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Layers3, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Tv, Film, Clapperboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { DataTable, Field, PageHeader, Td, useAction, useAdminQuery } from "@/components/admin-ui";
-import { deletePlaylist, getPlaylistEditor, listPlaylists, listSources, savePlaylist, type Playlist, type Source } from "@/lib/admin.functions";
-
-export const Route = createFileRoute("/admin/editor-listas")({ component: EditorListas });
-
-function EditorListas() {
-  const list=useServerFn(listPlaylists), sourcesFn=useServerFn(listSources), get=useServerFn(getPlaylistEditor);
-  const save=useServerFn(savePlaylist), del=useServerFn(deletePlaylist), act=useAction();
-  const {data=[]}=useAdminQuery("playlists",()=>list());
-  const {data:sources=[]}=useAdminQuery("sources",()=>sourcesFn());
-  const [editing,setEditing]=useState<Playlist|"new"|null>(null);
-  const [selected,setSelected]=useState<string[]>([]);
-  const [loading,setLoading]=useState(false);
-
-  const openEdit=async(p:Playlist)=>{
-    setLoading(true);
-    try { const r=await get({data:{id:p.id}}); setSelected(r.selected.filter(x=>x.active).map(x=>x.source_id)); setEditing(p); }
-    finally { setLoading(false); }
-  };
-  return <>
-    <PageHeader title="Editor de Listas" desc="Monte sua programação MAXON PLAY usando fontes M3U e Xtream autorizadas, sem expor credenciais."
-      action={<Button variant="hero" onClick={()=>{setSelected([]);setEditing("new")}}><Plus/>Nova lista</Button>}/>
-    <div className="mb-6 grid gap-3 md:grid-cols-3">
-      <Info icon={<Layers3/>} title="1. Fontes" text="Cadastre M3U ou Xtream em Fontes / Listas."/>
-      <Info icon={<Sparkles/>} title="2. Organize" text="Combine fontes e defina a ordem de preferência."/>
-      <Info icon={<ShieldCheck/>} title="3. Publique" text="A configuração permanece protegida no painel."/>
-    </div>
-    <DataTable head={["Lista","Fontes combinadas","Quantidade","Status",""]} empty={data.length===0}>
-      {data.map(p=><tr key={p.id}>
-        <Td className="font-medium">{p.name}<div className="max-w-xs truncate text-xs text-muted-foreground">{p.description}</div></Td>
-        <Td className="max-w-md truncate text-muted-foreground">{p.source_names||"Nenhuma fonte"}</Td>
-        <Td>{p.sources}</Td><Td>{p.active?"Ativa":"Inativa"}</Td>
-        <Td><div className="flex gap-2">
-          <Button size="sm" variant="secondary" disabled={loading} onClick={()=>void openEdit(p)}>Organizar</Button>
-          <Button size="sm" variant="destructive" onClick={()=>{if(confirm(`Remover "${p.name}"?`)) void act(del({data:{id:p.id}}),"Lista removida.",["playlists"])}}><Trash2 className="h-4 w-4"/>Remover</Button>
-        </div></Td>
-      </tr>)}
-    </DataTable>
-    <Dialog open={!!editing} onOpenChange={o=>!o&&setEditing(null)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{editing==="new"?"Criar lista MAXON PLAY":"Organizar lista"}</DialogTitle></DialogHeader>
-        {editing&&<PlaylistForm initial={editing==="new"?null:editing} sources={sources} selected={selected} onSave={async d=>{
-          await act(save({data:d}),"Lista salva e organizada.",["playlists"]); setEditing(null);
-        }}/>}
-      </DialogContent>
-    </Dialog>
-  </>;
+import { deletePlaylist,getPlaylistEditor,importSourceCatalog,listPlaylistCatalog,listPlaylists,listSources,savePlaylist,savePlaylistItemRule,type CatalogItem,type Playlist,type Source } from "@/lib/admin.functions";
+export const Route=createFileRoute("/admin/editor-listas")({component:EditorListas});
+function EditorListas(){
+ const list=useServerFn(listPlaylists),sourcesFn=useServerFn(listSources),get=useServerFn(getPlaylistEditor),save=useServerFn(savePlaylist),del=useServerFn(deletePlaylist),catalogFn=useServerFn(listPlaylistCatalog),importFn=useServerFn(importSourceCatalog),ruleFn=useServerFn(savePlaylistItemRule),act=useAction();
+ const {data=[]}=useAdminQuery("playlists",()=>list()); const {data:sources=[]}=useAdminQuery("sources",()=>sourcesFn());
+ const [editing,setEditing]=useState<Playlist|"new"|null>(null),[selected,setSelected]=useState<string[]>([]),[catalogFor,setCatalogFor]=useState<Playlist|null>(null),[items,setItems]=useState<CatalogItem[]>([]),[busy,setBusy]=useState(false),[q,setQ]=useState(""),[kind,setKind]=useState<"all"|"live"|"movie"|"series">("all");
+ const openEdit=async(p:Playlist)=>{setBusy(true);try{const r=await get({data:{id:p.id}});setSelected(r.selected.filter(x=>x.active).map(x=>x.source_id));setEditing(p)}finally{setBusy(false)}};
+ const openCatalog=async(p:Playlist)=>{setBusy(true);try{const x=await catalogFn({data:{playlist_id:p.id}});setItems(x);setCatalogFor(p)}finally{setBusy(false)}};
+ const filtered=useMemo(()=>items.filter(x=>(kind==="all"||x.kind===kind)&&(!q||(`${x.name} ${x.category} ${x.source_name}`).toLowerCase().includes(q.toLowerCase()))),[items,q,kind]);
+ const counts={live:items.filter(x=>x.kind==="live").length,movie:items.filter(x=>x.kind==="movie").length,series:items.filter(x=>x.kind==="series").length};
+ return <><PageHeader title="Editor de Listas" desc="Sua programação MAXON PLAY: importe catálogos autorizados, pesquise e escolha o que entra."
+ action={<Button variant="hero" onClick={()=>{setSelected([]);setEditing("new")}}><Plus/>Nova lista</Button>}/>
+ <div className="mb-6 grid gap-3 md:grid-cols-3"><Info icon={<Layers3/>} title="1. Fontes do fornecedor" text="M3U e Xtream ficam protegidos e separados da sua lista."/><Info icon={<Sparkles/>} title="2. Minha lista MAXON PLAY" text="Combine fontes e abra o catálogo para organizar o conteúdo."/><Info icon={<ShieldCheck/>} title="3. Controle" text="Pesquise, filtre e ative ou oculte itens sem expor credenciais."/></div>
+ <DataTable head={["Minha lista","Fontes do fornecedor","Qtd.","Status",""]} empty={!data.length}>{data.map(p=><tr key={p.id}><Td className="font-medium">{p.name}<div className="text-xs text-muted-foreground">{p.description}</div></Td><Td className="max-w-md truncate text-muted-foreground">{p.source_names||"Nenhuma"}</Td><Td>{p.sources}</Td><Td>{p.active?"Ativa":"Inativa"}</Td><Td><div className="flex gap-2"><Button size="sm" variant="secondary" disabled={busy} onClick={()=>void openCatalog(p)}>Abrir catálogo</Button><Button size="sm" variant="secondary" onClick={()=>void openEdit(p)}>Fontes</Button><Button size="sm" variant="destructive" onClick={()=>{if(confirm(`Remover "${p.name}"?`))void act(del({data:{id:p.id}}),"Lista removida.",["playlists"])}}><Trash2 className="h-4 w-4"/></Button></div></Td></tr>)}</DataTable>
+ <Dialog open={!!editing} onOpenChange={o=>!o&&setEditing(null)}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{editing==="new"?"Criar lista MAXON PLAY":"Fontes da lista"}</DialogTitle></DialogHeader>{editing&&<PlaylistForm initial={editing==="new"?null:editing} sources={sources} selected={selected} onSave={async d=>{await act(save({data:d}),"Lista salva.",["playlists"]);setEditing(null)}}/>}</DialogContent></Dialog>
+ <Dialog open={!!catalogFor} onOpenChange={o=>!o&&setCatalogFor(null)}><DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto"><DialogHeader><DialogTitle>Catálogo — {catalogFor?.name}</DialogTitle></DialogHeader>{catalogFor&&<div className="space-y-4">
+  <div className="flex flex-wrap gap-2">{sources.filter(s=>catalogFor.source_names.includes(s.name)).map(s=><Button key={s.id} variant="secondary" disabled={busy} onClick={async()=>{setBusy(true);try{const r=await act(importFn({data:{source_id:s.id}}),`Catálogo importado.`,[]);if(r){const x=await catalogFn({data:{playlist_id:catalogFor.id}});setItems(x)}}finally{setBusy(false)}}><RefreshCw/>Importar {s.name}</Button>)}</div>
+  <div className="grid gap-2 md:grid-cols-4"><Stat icon={<Tv/>} label="TV ao vivo" n={counts.live}/><Stat icon={<Film/>} label="Filmes" n={counts.movie}/><Stat icon={<Clapperboard/>} label="Séries" n={counts.series}/><Stat icon={<Layers3/>} label="Total" n={items.length}/></div>
+  <div className="flex flex-wrap gap-2"><div className="relative min-w-64 flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"/><Input className="pl-9" value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar canal, filme, série ou categoria..."/></div>{(["all","live","movie","series"] as const).map(k=><Button key={k} variant={kind===k?"hero":"secondary"} onClick={()=>setKind(k)}>{k==="all"?"Tudo":k==="live"?"TV":k==="movie"?"Filmes":"Séries"}</Button>)}</div>
+  <div className="rounded-xl border border-border"><div className="max-h-[48vh] overflow-y-auto divide-y divide-border">{!filtered.length&&<p className="p-6 text-center text-muted-foreground">Importe uma fonte acima ou ajuste a busca.</p>}{filtered.slice(0,2000).map(x=><div key={x.id} className="flex items-center gap-3 p-3"><input type="checkbox" checked={x.enabled} onChange={async e=>{const enabled=e.target.checked;setItems(v=>v.map(i=>i.id===x.id?{...i,enabled}:i));await ruleFn({data:{playlist_id:catalogFor.id,item_id:x.id,enabled}})}}/><div className="min-w-0 flex-1"><p className={x.enabled?"font-medium":"font-medium text-muted-foreground line-through"}>{x.custom_name||x.name}</p><p className="truncate text-xs text-muted-foreground">{x.kind==="live"?"TV":x.kind==="movie"?"Filme":"Série"} · {x.custom_category||x.category} · {x.source_name}</p></div></div>)}</div></div>
+  {filtered.length>2000&&<p className="text-xs text-muted-foreground">Mostrando 2.000 resultados. Use a busca para refinar.</p>}
+ </div>}</DialogContent></Dialog></>
 }
-function Info({icon,title,text}:{icon:React.ReactNode;title:string;text:string}) {
-  return <div className="rounded-2xl border border-border bg-card p-4"><div className="mb-2 flex items-center gap-2 font-semibold text-primary">{icon}{title}</div><p className="text-sm text-muted-foreground">{text}</p></div>;
-}
-function PlaylistForm({initial,sources,selected,onSave}:{initial:Playlist|null;sources:Source[];selected:string[];onSave:(d:{id?:string;name:string;description:string;active:boolean;source_ids:string[]})=>Promise<void>}) {
-  const [name,setName]=useState(initial?.name??"MAXON PLAY");
-  const [description,setDescription]=useState(initial?.description??"");
-  const [active,setActive]=useState(initial?.active??true);
-  const [ids,setIds]=useState(selected);
-  const [busy,setBusy]=useState(false);
-  const toggle=(id:string)=>setIds(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id]);
-  const move=(id:string,dir:-1|1)=>setIds(v=>{const i=v.indexOf(id),j=i+dir;if(i<0||j<0||j>=v.length)return v;const n=[...v];[n[i],n[j]]=[n[j],n[i]];return n});
-  return <form className="space-y-4" onSubmit={async e=>{e.preventDefault();setBusy(true);try{await onSave({...initial?{id:initial.id}:{},name,description,active,source_ids:ids})}finally{setBusy(false)}}}>
-    <Field label="Nome da lista"><Input value={name} onChange={e=>setName(e.target.value)} required/></Field>
-    <Field label="Descrição"><Input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Ex: Lista principal MAXON PLAY"/></Field>
-    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/> Lista ativa</label>
-    <div><p className="mb-2 text-sm font-medium">Fontes disponíveis</p>
-      <div className="space-y-2 rounded-xl border border-border p-2">
-        {sources.length===0&&<p className="p-3 text-sm text-muted-foreground">Cadastre primeiro uma fonte M3U ou Xtream.</p>}
-        {sources.map(s=>{const checked=ids.includes(s.id),pos=ids.indexOf(s.id);return <div key={s.id} className="flex items-center gap-3 rounded-lg bg-secondary/40 p-3">
-          <input type="checkbox" checked={checked} onChange={()=>toggle(s.id)}/>
-          <div className="min-w-0 flex-1"><p className="truncate font-medium">{s.name}</p><p className="truncate text-xs text-muted-foreground">{s.type.toUpperCase()} · {s.display_hint}</p></div>
-          {checked&&<><span className="text-xs text-muted-foreground">#{pos+1}</span><Button type="button" size="sm" variant="secondary" disabled={pos===0} onClick={()=>move(s.id,-1)}>↑</Button><Button type="button" size="sm" variant="secondary" disabled={pos===ids.length-1} onClick={()=>move(s.id,1)}>↓</Button></>}
-        </div>})}
-      </div>
-    </div>
-    <Button className="w-full" variant="hero" type="submit" disabled={busy}>{busy?"Salvando…":"Salvar e organizar lista"}</Button>
-  </form>;
+function Info({icon,title,text}:{icon:React.ReactNode;title:string;text:string}){return <div className="rounded-2xl border border-border bg-card p-4"><div className="mb-2 flex items-center gap-2 font-semibold text-primary">{icon}{title}</div><p className="text-sm text-muted-foreground">{text}</p></div>}
+function Stat({icon,label,n}:{icon:React.ReactNode;label:string;n:number}){return <div className="rounded-xl border border-border bg-secondary/30 p-3"><div className="flex items-center gap-2 text-sm text-muted-foreground">{icon}{label}</div><p className="mt-1 text-2xl font-bold">{n}</p></div>}
+function PlaylistForm({initial,sources,selected,onSave}:{initial:Playlist|null;sources:Source[];selected:string[];onSave:(d:{id?:string;name:string;description:string;active:boolean;source_ids:string[]})=>Promise<void>}){
+ const[name,setName]=useState(initial?.name??"MAXON PLAY"),[description,setDescription]=useState(initial?.description??""),[active,setActive]=useState(initial?.active??true),[ids,setIds]=useState(selected),[busy,setBusy]=useState(false);
+ const toggle=(id:string)=>setIds(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id]);const move=(id:string,d:-1|1)=>setIds(v=>{const i=v.indexOf(id),j=i+d;if(i<0||j<0||j>=v.length)return v;const n=[...v];[n[i],n[j]]=[n[j],n[i]];return n});
+ return <form className="space-y-4" onSubmit={async e=>{e.preventDefault();setBusy(true);try{await onSave({...initial?{id:initial.id}:{},name,description,active,source_ids:ids})}finally{setBusy(false)}}}><Field label="Nome da sua lista"><Input value={name} onChange={e=>setName(e.target.value)} required/></Field><Field label="Descrição"><Input value={description} onChange={e=>setDescription(e.target.value)}/></Field><label className="flex gap-2 text-sm"><input type="checkbox" checked={active} onChange={e=>setActive(e.target.checked)}/>Ativa</label><div className="space-y-2">{sources.map(s=>{const c=ids.includes(s.id),p=ids.indexOf(s.id);return <div key={s.id} className="flex items-center gap-3 rounded-lg bg-secondary/40 p-3"><input type="checkbox" checked={c} onChange={()=>toggle(s.id)}/><div className="min-w-0 flex-1"><p className="font-medium">{s.name}</p><p className="truncate text-xs text-muted-foreground">{s.type.toUpperCase()} · {s.display_hint}</p></div>{c&&<><span className="text-xs">#{p+1}</span><Button type="button" size="sm" variant="secondary" onClick={()=>move(s.id,-1)}>↑</Button><Button type="button" size="sm" variant="secondary" onClick={()=>move(s.id,1)}>↓</Button></>}</div>})}</div><Button className="w-full" variant="hero" disabled={busy}>{busy?"Salvando…":"Salvar lista"}</Button></form>
 }
