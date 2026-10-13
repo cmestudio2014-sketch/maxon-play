@@ -1039,6 +1039,89 @@ export const deleteProviderServer = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------------- Catálogo autorizado para Editor ----------------
+function catalogPrivateIp(ip: string): boolean {
+  const x=ip.toLowerCase();
+  if(x==="::1"||x==="0.0.0.0"||x.startsWith("127.")||x.startsWith("10.")||x.startsWith("192.168.")||x.startsWith("169.254.")) return true;
+  const m=x.match(/^172\.(\d+)\./); if(m&&Number(m[1])>=16&&Number(m[1])<=31) return true;
+  return x.startsWith("fc")||x.startsWith("fd")||x.startsWith("fe80:");
+}
+async function catalogAssertPublic(url: URL) {
+  const {lookup}=await import("node:dns/promises"); const {isIP}=await import("node:net");
+  const a=isIP(url.hostname)?[{address:url.hostname}]:await lookup(url.hostname,{all:true});
+  if(!a.length||a.some(x=>catalogPrivateIp(x.address))) throw new Error("Destino privado/local não permitido.");
+}
+async function catalogFetch(url: string) {
+  let u=new URL(url);
+  for(let i=0;i<4;i++){
+    await catalogAssertPublic(u);
+    const r=await fetch(u,{redirect:"manual",signal:AbortSignal.timeout(15000),headers:{"user-agent":"MAXON-PLAY-Catalog/1.0",accept:"*/*"}});
+    if([301,302,303,307,308].includes(r.status)){const l=r.headers.get("location");if(!l) return r;u=new URL(l,u);continue}
+    return r;
+  }
+  throw new Error("Muitos redirecionamentos.");
+}
+function attr(line:string,key:string){const m=line.match(new RegExp(key+'="([^"]*)"',"i"));return m?.[1]?.trim()||"";}
+function safeName(v:unknown,fallback:string){return String(v??fallback).trim().slice(0,180)||fallback;}
+export const importSourceCatalog = createServerFn({method:"POST"})
+  .inputValidator(d=>z.object({source_id:uuid}).parse(d))
+  .handler(async({data})=>{
+    const u=await requireAdmin(["admin"]);
+    const row=await q1<{id:string;name:string;payload_enc:string}>("SELECT id,name,payload_enc FROM sources WHERE id=$1",[data.source_id]);
+    if(!row) throw new Error("Fonte não encontrada.");
+    const {decryptPayload}=await import("./server/sources.server");
+    const p=decryptPayload(row.payload_enc);
+    const items:{external_key:string;kind:"live"|"movie"|"series";name:string;category:string}[]=[];
+    if(p.type==="m3u"){
+      const r=await catalogFetch(p.m3u_url); if(!r.ok) throw new Error(`Fonte respondeu HTTP ${r.status}.`);
+      const text=(await r.text()).slice(0,25_000_000); const lines=text.split(/\r?\n/);
+      const {createHash}=await import("node:crypto");
+      for(let i=0;i<lines.length&&items.length<30000;i++){
+        const l=lines[i].trim(); if(!l.startsWith("#EXTINF:")) continue;
+        let j=i+1; while(j<lines.length&&(!lines[j].trim()||lines[j].trim().startsWith("#"))) j++;
+        const stream=lines[j]?.trim(); if(!stream||!/^https?:\/\//i.test(stream)) continue;
+        const name=safeName(l.split(",").slice(1).join(","),"Canal");
+        const category=safeName(attr(l,"group-title"),"Sem categoria");
+        const key=createHash("sha256").update(stream).digest("hex").slice(0,32);
+        items.push({external_key:key,kind:"live",name,category});
+      }
+    } else {
+      const base=p.server.replace(/\/+$/,""); const auth=`username=${encodeURIComponent(p.username)}&password=${encodeURIComponent(p.password)}`;
+      const endpoints:[string,"live"|"movie"|"series"][]=[["get_live_streams","live"],["get_vod_streams","movie"],["get_series","series"]];
+      const categories=new Map<string,string>();
+      for(const [action,kind] of endpoints){
+        const cr=await catalogFetch(`${base}/player_api.php?${auth}&action=get_${kind==="live"?"live":kind==="movie"?"vod":"series"}_categories`);
+        if(cr.ok){for(const c of await cr.json() as any[]) categories.set(`${kind}:${c.category_id}`,safeName(c.category_name,"Sem categoria"))}
+        const r=await catalogFetch(`${base}/player_api.php?${auth}&action=${action}`); if(!r.ok) continue;
+        const arr=await r.json() as any[];
+        for(const x of arr.slice(0,30000-items.length)){
+          const raw=kind==="series"?x.series_id:x.stream_id; if(raw==null) continue;
+          items.push({external_key:`${kind}:${String(raw)}`,kind,name:safeName(x.name,kind==="live"?"Canal":kind==="movie"?"Filme":"Série"),category:categories.get(`${kind}:${x.category_id}`)||"Sem categoria"});
+        }
+      }
+    }
+    await q("DELETE FROM source_catalog_items WHERE source_id=$1",[data.source_id]);
+    for(const x of items) await q("INSERT INTO source_catalog_items(source_id,external_key,kind,name,category) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(source_id,external_key) DO UPDATE SET kind=EXCLUDED.kind,name=EXCLUDED.name,category=EXCLUDED.category,imported_at=now()",[data.source_id,x.external_key,x.kind,x.name,x.category]);
+    await audit({...actor(u),action:"source.catalog_import",entity:"source",entityId:data.source_id,details:{items:items.length}});
+    return {ok:true,count:items.length};
+  });
+export type CatalogItem={id:string;source_id:string;source_name:string;kind:"live"|"movie"|"series";name:string;category:string;enabled:boolean;custom_name:string|null;custom_category:string|null};
+export const listPlaylistCatalog = createServerFn({method:"POST"})
+ .inputValidator(d=>z.object({playlist_id:uuid}).parse(d))
+ .handler(async({data})=>{await requireAdmin();return q<CatalogItem>(
+   `SELECT ci.id,ci.source_id,s.name source_name,ci.kind,ci.name,ci.category,
+    coalesce(r.enabled,true) enabled,r.custom_name,r.custom_category
+    FROM source_catalog_items ci JOIN playlist_sources ps ON ps.source_id=ci.source_id AND ps.playlist_id=$1 AND ps.active
+    JOIN sources s ON s.id=ci.source_id LEFT JOIN playlist_item_rules r ON r.catalog_item_id=ci.id AND r.playlist_id=$1
+    ORDER BY ci.kind,ci.category,ci.name LIMIT 30000`,[data.playlist_id])});
+export const savePlaylistItemRule=createServerFn({method:"POST"})
+ .inputValidator(d=>z.object({playlist_id:uuid,item_id:uuid,enabled:z.boolean(),custom_name:z.string().trim().max(180).nullable().optional(),custom_category:z.string().trim().max(120).nullable().optional()}).parse(d))
+ .handler(async({data})=>{const u=await requireAdmin(["admin"]);await q(
+  `INSERT INTO playlist_item_rules(playlist_id,catalog_item_id,enabled,custom_name,custom_category)
+   VALUES($1,$2,$3,$4,$5) ON CONFLICT(playlist_id,catalog_item_id) DO UPDATE SET enabled=EXCLUDED.enabled,custom_name=EXCLUDED.custom_name,custom_category=EXCLUDED.custom_category`,
+  [data.playlist_id,data.item_id,data.enabled,data.custom_name||null,data.custom_category||null]);
+  await audit({...actor(u),action:"playlist.item_rule",entity:"playlist",entityId:data.playlist_id,details:{item_id:data.item_id,enabled:data.enabled}});return{ok:true}});
+
 // ---------------- Editor de listas ----------------
 export type Playlist = {
   id: string;
