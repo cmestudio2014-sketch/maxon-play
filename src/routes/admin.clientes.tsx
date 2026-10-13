@@ -113,7 +113,7 @@ function Clientes() {
         ))}
       </DataTable>
       <Dialog open={!!form} onOpenChange={(o) => !o && setForm(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form?.id ? "Editar cliente" : "Novo cliente"}</DialogTitle>
           </DialogHeader>
