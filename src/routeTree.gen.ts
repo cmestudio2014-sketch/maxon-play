@@ -23,8 +23,11 @@ import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
 import { Route as AdminCuponsRouteImport } from './routes/admin.cupons'
 import { Route as AdminDispositivosRouteImport } from './routes/admin.dispositivos'
+import { Route as AdminEditorListasRouteImport } from './routes/admin.editor-listas'
 import { Route as AdminFontesRouteImport } from './routes/admin.fontes'
 import { Route as AdminPlanosRouteImport } from './routes/admin.planos'
+import { Route as AdminServidoresRouteImport } from './routes/admin.servidores'
+import { Route as AdminStreamingRouteImport } from './routes/admin.streaming'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminVendasRouteImport } from './routes/admin.vendas'
 import { Route as ApiV1ActivationActivateRouteImport } from './routes/api/v1/activation/activate'
@@ -33,6 +36,8 @@ import { Route as ApiV1DeviceConfigRouteImport } from './routes/api/v1/device/co
 import { Route as ApiV1DeviceHeartbeatRouteImport } from './routes/api/v1/device/heartbeat'
 import { Route as ApiV1DeviceRegisterRouteImport } from './routes/api/v1/device/register'
 import { Route as ApiV1DeviceStatusRouteImport } from './routes/api/v1/device/status'
+import { Route as ApiV1PairingRequestRouteImport } from './routes/api/v1/pairing/request'
+import { Route as ApiV1PairingStatusRouteImport } from './routes/api/v1/pairing/status'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -104,6 +109,11 @@ const AdminDispositivosRoute = AdminDispositivosRouteImport.update({
   path: '/dispositivos',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEditorListasRoute = AdminEditorListasRouteImport.update({
+  id: '/editor-listas',
+  path: '/editor-listas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFontesRoute = AdminFontesRouteImport.update({
   id: '/fontes',
   path: '/fontes',
@@ -112,6 +122,16 @@ const AdminFontesRoute = AdminFontesRouteImport.update({
 const AdminPlanosRoute = AdminPlanosRouteImport.update({
   id: '/planos',
   path: '/planos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminServidoresRoute = AdminServidoresRouteImport.update({
+  id: '/servidores',
+  path: '/servidores',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStreamingRoute = AdminStreamingRouteImport.update({
+  id: '/streaming',
+  path: '/streaming',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
@@ -154,6 +174,16 @@ const ApiV1DeviceStatusRoute = ApiV1DeviceStatusRouteImport.update({
   path: '/api/v1/device/status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1PairingRequestRoute = ApiV1PairingRequestRouteImport.update({
+  id: '/api/v1/pairing/request',
+  path: '/api/v1/pairing/request',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PairingStatusRoute = ApiV1PairingStatusRouteImport.update({
+  id: '/api/v1/pairing/status',
+  path: '/api/v1/pairing/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -169,8 +199,11 @@ export interface FileRoutesByFullPath {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/dispositivos': typeof AdminDispositivosRoute
+  '/admin/editor-listas': typeof AdminEditorListasRoute
   '/admin/fontes': typeof AdminFontesRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/servidores': typeof AdminServidoresRoute
+  '/admin/streaming': typeof AdminStreamingRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/vendas': typeof AdminVendasRoute
   '/admin/': typeof AdminIndexRoute
@@ -180,6 +213,8 @@ export interface FileRoutesByFullPath {
   '/api/v1/device/heartbeat': typeof ApiV1DeviceHeartbeatRoute
   '/api/v1/device/register': typeof ApiV1DeviceRegisterRoute
   '/api/v1/device/status': typeof ApiV1DeviceStatusRoute
+  '/api/v1/pairing/request': typeof ApiV1PairingRequestRoute
+  '/api/v1/pairing/status': typeof ApiV1PairingStatusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -194,8 +229,11 @@ export interface FileRoutesByTo {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/dispositivos': typeof AdminDispositivosRoute
+  '/admin/editor-listas': typeof AdminEditorListasRoute
   '/admin/fontes': typeof AdminFontesRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/servidores': typeof AdminServidoresRoute
+  '/admin/streaming': typeof AdminStreamingRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/vendas': typeof AdminVendasRoute
   '/admin': typeof AdminIndexRoute
@@ -205,6 +243,8 @@ export interface FileRoutesByTo {
   '/api/v1/device/heartbeat': typeof ApiV1DeviceHeartbeatRoute
   '/api/v1/device/register': typeof ApiV1DeviceRegisterRoute
   '/api/v1/device/status': typeof ApiV1DeviceStatusRoute
+  '/api/v1/pairing/request': typeof ApiV1PairingRequestRoute
+  '/api/v1/pairing/status': typeof ApiV1PairingStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -221,8 +261,11 @@ export interface FileRoutesById {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/dispositivos': typeof AdminDispositivosRoute
+  '/admin/editor-listas': typeof AdminEditorListasRoute
   '/admin/fontes': typeof AdminFontesRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/servidores': typeof AdminServidoresRoute
+  '/admin/streaming': typeof AdminStreamingRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/vendas': typeof AdminVendasRoute
   '/admin/': typeof AdminIndexRoute
@@ -232,6 +275,8 @@ export interface FileRoutesById {
   '/api/v1/device/heartbeat': typeof ApiV1DeviceHeartbeatRoute
   '/api/v1/device/register': typeof ApiV1DeviceRegisterRoute
   '/api/v1/device/status': typeof ApiV1DeviceStatusRoute
+  '/api/v1/pairing/request': typeof ApiV1PairingRequestRoute
+  '/api/v1/pairing/status': typeof ApiV1PairingStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -249,8 +294,11 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/cupons'
     | '/admin/dispositivos'
+    | '/admin/editor-listas'
     | '/admin/fontes'
     | '/admin/planos'
+    | '/admin/servidores'
+    | '/admin/streaming'
     | '/admin/usuarios'
     | '/admin/vendas'
     | '/admin/'
@@ -260,6 +308,8 @@ export interface FileRouteTypes {
     | '/api/v1/device/heartbeat'
     | '/api/v1/device/register'
     | '/api/v1/device/status'
+    | '/api/v1/pairing/request'
+    | '/api/v1/pairing/status'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -274,8 +324,11 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/cupons'
     | '/admin/dispositivos'
+    | '/admin/editor-listas'
     | '/admin/fontes'
     | '/admin/planos'
+    | '/admin/servidores'
+    | '/admin/streaming'
     | '/admin/usuarios'
     | '/admin/vendas'
     | '/admin'
@@ -285,6 +338,8 @@ export interface FileRouteTypes {
     | '/api/v1/device/heartbeat'
     | '/api/v1/device/register'
     | '/api/v1/device/status'
+    | '/api/v1/pairing/request'
+    | '/api/v1/pairing/status'
   id:
     | '__root__'
     | '/'
@@ -300,8 +355,11 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/cupons'
     | '/admin/dispositivos'
+    | '/admin/editor-listas'
     | '/admin/fontes'
     | '/admin/planos'
+    | '/admin/servidores'
+    | '/admin/streaming'
     | '/admin/usuarios'
     | '/admin/vendas'
     | '/admin/'
@@ -311,6 +369,8 @@ export interface FileRouteTypes {
     | '/api/v1/device/heartbeat'
     | '/api/v1/device/register'
     | '/api/v1/device/status'
+    | '/api/v1/pairing/request'
+    | '/api/v1/pairing/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -327,6 +387,8 @@ export interface RootRouteChildren {
   ApiV1DeviceHeartbeatRoute: typeof ApiV1DeviceHeartbeatRoute
   ApiV1DeviceRegisterRoute: typeof ApiV1DeviceRegisterRoute
   ApiV1DeviceStatusRoute: typeof ApiV1DeviceStatusRoute
+  ApiV1PairingRequestRoute: typeof ApiV1PairingRequestRoute
+  ApiV1PairingStatusRoute: typeof ApiV1PairingStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -429,6 +491,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDispositivosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/editor-listas': {
+      id: '/admin/editor-listas'
+      path: '/editor-listas'
+      fullPath: '/admin/editor-listas'
+      preLoaderRoute: typeof AdminEditorListasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/fontes': {
       id: '/admin/fontes'
       path: '/fontes'
@@ -441,6 +510,20 @@ declare module '@tanstack/react-router' {
       path: '/planos'
       fullPath: '/admin/planos'
       preLoaderRoute: typeof AdminPlanosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/servidores': {
+      id: '/admin/servidores'
+      path: '/servidores'
+      fullPath: '/admin/servidores'
+      preLoaderRoute: typeof AdminServidoresRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/streaming': {
+      id: '/admin/streaming'
+      path: '/streaming'
+      fullPath: '/admin/streaming'
+      preLoaderRoute: typeof AdminStreamingRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/usuarios': {
@@ -499,6 +582,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1DeviceStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/pairing/request': {
+      id: '/api/v1/pairing/request'
+      path: '/api/v1/pairing/request'
+      fullPath: '/api/v1/pairing/request'
+      preLoaderRoute: typeof ApiV1PairingRequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/pairing/status': {
+      id: '/api/v1/pairing/status'
+      path: '/api/v1/pairing/status'
+      fullPath: '/api/v1/pairing/status'
+      preLoaderRoute: typeof ApiV1PairingStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -509,8 +606,11 @@ interface AdminRouteChildren {
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminCuponsRoute: typeof AdminCuponsRoute
   AdminDispositivosRoute: typeof AdminDispositivosRoute
+  AdminEditorListasRoute: typeof AdminEditorListasRoute
   AdminFontesRoute: typeof AdminFontesRoute
   AdminPlanosRoute: typeof AdminPlanosRoute
+  AdminServidoresRoute: typeof AdminServidoresRoute
+  AdminStreamingRoute: typeof AdminStreamingRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminVendasRoute: typeof AdminVendasRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -523,8 +623,11 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminCuponsRoute: AdminCuponsRoute,
   AdminDispositivosRoute: AdminDispositivosRoute,
+  AdminEditorListasRoute: AdminEditorListasRoute,
   AdminFontesRoute: AdminFontesRoute,
   AdminPlanosRoute: AdminPlanosRoute,
+  AdminServidoresRoute: AdminServidoresRoute,
+  AdminStreamingRoute: AdminStreamingRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminVendasRoute: AdminVendasRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -546,6 +649,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1DeviceHeartbeatRoute: ApiV1DeviceHeartbeatRoute,
   ApiV1DeviceRegisterRoute: ApiV1DeviceRegisterRoute,
   ApiV1DeviceStatusRoute: ApiV1DeviceStatusRoute,
+  ApiV1PairingRequestRoute: ApiV1PairingRequestRoute,
+  ApiV1PairingStatusRoute: ApiV1PairingStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
