@@ -1,15 +1,20 @@
-// Inicia o servidor Node gerado em .output (preset node-server do Nitro).
+// Inicia o build publicado manualmente. Prefere o build novo aninhado quando presente.
 import { existsSync } from "node:fs";
 
 process.env.NODE_ENV ??= "production";
 process.env.HOST ??= "0.0.0.0";
 process.env.NITRO_HOST ??= process.env.HOST;
-process.env.PORT ??= "80"; // Square Cloud expõe sites na porta 80
+process.env.PORT ??= "80";
 process.env.NITRO_PORT ??= process.env.PORT;
 
-if (!existsSync(".output/server/index.mjs")) {
-  console.error("Build não encontrado. Rode: npm run build:node");
+const entry = existsSync(".output/.output/server/index.mjs")
+  ? "../.output/.output/server/index.mjs"
+  : "../.output/server/index.mjs";
+
+if (!existsSync(entry.slice(3))) {
+  console.error("Build não encontrado.");
   process.exit(1);
 }
+console.log(`[maxon] Usando build: ${entry}`);
 console.log(`[maxon] Servindo em http://${process.env.HOST}:${process.env.PORT}`);
-await import("../.output/server/index.mjs");
+await import(entry);
