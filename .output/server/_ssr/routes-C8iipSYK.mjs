@@ -2,7 +2,7 @@ import { y as Link } from "../_libs/@tanstack/react-router+[...].mjs";
 import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { t as Button } from "./button-CTmx8QDF.mjs";
 import { n as SiteFooter, r as SiteHeader } from "./brand-DsXviQDH.mjs";
-import { c as ShieldCheck, h as MonitorPlay, i as Tv, y as KeyRound } from "../_libs/lucide-react.mjs";
+import { b as KeyRound, c as ShieldCheck, g as MonitorPlay, i as Tv } from "../_libs/lucide-react.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/routes-C8iipSYK.js
 var import_jsx_runtime = require_jsx_runtime();
 var features = [

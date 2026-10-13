@@ -1,1 +1,0 @@
-import{rt as e}from"./index-CvSG2Mim.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`p-10 text-center`,children:`Não encontrado.`});export{n as notFoundComponent};

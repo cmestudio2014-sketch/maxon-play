@@ -492,6 +492,46 @@ var Search = createLucideIcon("search", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Server = createLucideIcon("server", [
+	["rect", {
+		width: "20",
+		height: "8",
+		x: "2",
+		y: "2",
+		rx: "2",
+		ry: "2",
+		key: "ngkwjq"
+	}],
+	["rect", {
+		width: "20",
+		height: "8",
+		x: "2",
+		y: "14",
+		rx: "2",
+		ry: "2",
+		key: "iecqi9"
+	}],
+	["line", {
+		x1: "6",
+		x2: "6.01",
+		y1: "6",
+		y2: "6",
+		key: "16zg32"
+	}],
+	["line", {
+		x1: "6",
+		x2: "6.01",
+		y1: "18",
+		y2: "18",
+		key: "nzw8ys"
+	}]
+]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Settings = createLucideIcon("settings", [["path", {
 	d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915",
 	key: "1i5ecw"
@@ -691,4 +731,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { Copy as C, ChevronDown as D, ChevronRight as E, Check as O, Film as S, Circle as T, LogOut as _, Ticket as a, House as b, ShieldCheck as c, ScrollText as d, RefreshCw as f, MessageCircle as g, MonitorPlay as h, Tv as i, ChartColumn as k, Settings as l, MonitorSmartphone as m, Users as n, Tag as o, Plus as p, UserCog as r, ShoppingCart as s, X as t, Search as u, ListVideo as v, Clapperboard as w, Heart as x, KeyRound as y };
+export { ChartColumn as A, Film as C, ChevronRight as D, Circle as E, ChevronDown as O, Heart as S, Clapperboard as T, MessageCircle as _, Ticket as a, KeyRound as b, ShieldCheck as c, Search as d, ScrollText as f, MonitorPlay as g, MonitorSmartphone as h, Tv as i, Check as k, Settings as l, Plus as m, Users as n, Tag as o, RefreshCw as p, UserCog as r, ShoppingCart as s, X as t, Server as u, LogOut as v, Copy as w, House as x, ListVideo as y };

@@ -6,7 +6,7 @@ import { t as Button } from "./button-CTmx8QDF.mjs";
 import { t as Input } from "./input-B8Q2ztVi.mjs";
 import { n as toast } from "../_libs/sonner.mjs";
 import { a as fmtDate, t as Logo } from "./brand-DsXviQDH.mjs";
-import { S as Film, b as House, f as RefreshCw, i as Tv, l as Settings, u as Search, w as Clapperboard, x as Heart } from "../_libs/lucide-react.mjs";
+import { C as Film, S as Heart, T as Clapperboard, d as Search, i as Tv, l as Settings, p as RefreshCw, x as House } from "../_libs/lucide-react.mjs";
 import { i as register, n as fetchConfig, r as heartbeat } from "./device-client-o4zISu5E.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/player-B8SycbxI.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
