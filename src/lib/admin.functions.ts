@@ -1280,6 +1280,54 @@ const httpUrl = z
   .url()
   .max(500)
   .refine((u) => /^https?:\/\//i.test(u), "Use http(s)://");
+export const uploadM3uSource = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    name: z.string().trim().min(2).max(80),
+    customer_id: uuid.nullable(),
+    filename: z.string().trim().min(1).max(180),
+    content: z.string().min(1).max(8_000_000),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin(["admin"]);
+    const raw = data.content.replace(/^\uFEFF/, "");
+    if (!raw.trimStart().startsWith("#EXTM3U")) throw new Error("Arquivo M3U inválido: cabeçalho #EXTM3U não encontrado.");
+    const lines = raw.split(/\r?\n/);
+    const { createHash } = await import("node:crypto");
+    const { encryptPayload, encryptSecret } = await import("./server/sources.server");
+    const localRef = `upload://${createHash("sha256").update(raw).digest("hex").slice(0,24)}/${data.filename.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+    const enc = encryptPayload({ type:"m3u", m3u_url: localRef });
+    const source = await q1<{id:string}>(
+      "INSERT INTO sources(name,type,customer_id,payload_enc,display_hint) VALUES ($1,'m3u',$2,$3,$4) RETURNING id",
+      [data.name,data.customer_id,enc,`M3U enviado · ${data.filename.slice(0,80)}`]
+    );
+    if (!source) throw new Error("Não foi possível criar a fonte.");
+    let pending:{name:string;category:string}|null=null, count=0;
+    const seriesRx=/\b(series?|séries?|temporadas?|novelas?|animes?)\b|\bs\d{1,2}\b|\btemporada\b/i;
+    const movieRx=/\b(filmes?|movies?|cinema|vod)\b/i;
+    for (const line0 of lines) {
+      const line=line0.trim();
+      if (line.startsWith("#EXTINF:")) {
+        const m=line.match(/group-title="([^"]*)"/i);
+        const name=(line.split(",").slice(1).join(",").trim()||"Item").slice(0,180);
+        pending={name,category:(m?.[1]?.trim()||"Sem categoria").slice(0,180)};
+        continue;
+      }
+      if (!pending || !/^https?:\/\//i.test(line)) continue;
+      const probe=(pending.name+" "+pending.category).toLowerCase();
+      const kind:"live"|"movie"|"series"=seriesRx.test(probe)?"series":movieRx.test(probe)?"movie":"live";
+      const key=createHash("sha256").update(line).digest("hex").slice(0,32);
+      await q(`INSERT INTO source_catalog_items(source_id,external_key,kind,name,category,stream_ref_enc)
+        VALUES($1,$2,$3,$4,$5,$6)
+        ON CONFLICT(source_id,external_key) DO UPDATE SET kind=EXCLUDED.kind,name=EXCLUDED.name,category=EXCLUDED.category,stream_ref_enc=EXCLUDED.stream_ref_enc,imported_at=now()`,
+        [source.id,key,kind,pending.name,pending.category,encryptSecret(line)]);
+      count++; pending=null;
+      if(count>=30000) break;
+    }
+    if (!count) { await q("DELETE FROM sources WHERE id=$1",[source.id]); throw new Error("Nenhum stream HTTP/HTTPS válido foi encontrado no arquivo."); }
+    await audit({...actor(u),action:"source.upload_m3u",entity:"source",entityId:source.id,details:{filename:data.filename,items:count}});
+    return {id:source.id,count};
+  });
+
 export const saveSource = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
