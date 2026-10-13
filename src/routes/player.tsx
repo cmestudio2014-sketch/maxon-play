@@ -275,6 +275,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     if (!v) return;
     let disposed = false;
     let hls: import("hls.js").default | null = null;
+    let tsPlayer: { destroy: () => void } | null = null;
     setError("");
 
     const original = item.url.trim();
@@ -311,9 +312,29 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
           h.destroy(); hls = null;
           const ts = candidates.find(u => /\.ts(?:[?#]|$)/i.test(u));
           if (ts) {
-            void playDirect(ts).then(ok => {
-              if (!ok && !disposed) setError("Servidor respondeu, mas o formato TS/codec não é reproduzível neste navegador.");
-            });
+            void import("mpegts.js").then(({ default: mpegts }) => {
+              if (disposed) return;
+              if (!mpegts.isSupported()) {
+                setError("Este navegador não suporta MPEG-TS via Media Source Extensions.");
+                return;
+              }
+              v.removeAttribute("src");
+              v.load();
+              const player = mpegts.createPlayer({
+                type: "mpegts",
+                isLive: item.kind === "live",
+                url: proxy(ts),
+              }, { enableWorker: false, lazyLoad: item.kind !== "live" });
+              tsPlayer = player;
+              player.on(mpegts.Events.ERROR, (type: string, detail: string) => {
+                if (!disposed) setError("Erro TS: " + type + " / " + detail);
+              });
+              player.attachMediaElement(v);
+              player.load();
+              void player.play().catch(() => {
+                if (!disposed) setError("Não foi possível iniciar MPEG-TS; verifique o servidor ou codec.");
+              });
+            }).catch(() => { if (!disposed) setError("Falha ao carregar mecanismo MPEG-TS."); });
           } else {
             const code = data.response?.code;
             setError(code ? "Servidor de vídeo respondeu HTTP " + code + "." : "Não foi possível abrir o stream HLS pelo servidor.");
@@ -332,6 +353,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     return () => {
       disposed = true;
       hls?.destroy();
+      tsPlayer?.destroy();
       v.pause(); v.removeAttribute("src"); v.load();
       window.removeEventListener("keydown", esc);
     };
