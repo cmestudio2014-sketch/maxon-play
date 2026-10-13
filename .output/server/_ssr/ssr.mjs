@@ -93,7 +93,7 @@ function renderErrorPage() {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./server-VevfyNWO.mjs").then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./server-CP5Nb5Un.mjs").then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 async function normalizeCatastrophicSsrResponse(response) {
@@ -258,12 +258,17 @@ async function streamProbe(request) {
 			contentType: ct || "desconhecido",
 			format: hls ? "hls" : ts ? "mpegts" : mp4 ? "mp4" : "unknown"
 		}, { headers: { "cache-control": "no-store" } });
-	} catch {
+	} catch (e) {
+		const name = e instanceof Error ? e.name : "";
+		const message = e instanceof Error ? e.message : "";
+		const cause = e instanceof Error && "cause" in e ? String(e.cause ?? "") : "";
+		const detail = name === "TimeoutError" || /timeout/i.test(message) ? "timeout" : /ENOTFOUND|EAI_AGAIN|dns/i.test(message + cause) ? "dns" : /ECONNREFUSED|connection refused/i.test(message + cause) ? "connection-refused" : /ECONNRESET|socket|fetch failed/i.test(message + cause) ? "connection-failed" : "upstream-fetch";
 		return Response.json({
 			ok: false,
 			status: 502,
 			contentType: "desconhecido",
-			format: "unknown"
+			format: "unknown",
+			detail
 		}, {
 			status: 200,
 			headers: { "cache-control": "no-store" }
