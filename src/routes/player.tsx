@@ -269,70 +269,74 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     let disposed = false;
     let hls: import("hls.js").default | null = null;
     setError("");
-    const originalUrl = item.url.trim();
-    const xtreamTs = /\/live\/[^/]+\/[^/]+\/\d+\.ts(?:[?#]|$)/i.test(originalUrl);
-    const directUrl = xtreamTs ? originalUrl.replace(/\.ts(?=[?#]|$)/i, ".m3u8") : originalUrl;
-    const url = `/api/stream-proxy?url=${encodeURIComponent(directUrl)}`;
-    const onError = () => setError(xtreamTs
-      ? "HLS não disponível neste servidor. TS direto pode ser incompatível com o navegador; solicite uma URL HLS ao fornecedor."
-      : "Não foi possível reproduzir este stream. Verifique o formato, a autorização e a disponibilidade do servidor.");
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "Backspace") onClose();
-    };
+
+    const original = item.url.trim();
+    const candidates = (() => {
+      if (!/^https?:\/\//i.test(original)) return [];
+      if (/\/live\/[^/]+\/[^/]+\/\d+\.ts(?:[?#]|$)/i.test(original))
+        return [original.replace(/\.ts(?=[?#]|$)/i, ".m3u8"), original];
+      if (/\/live\/[^/]+\/[^/]+\/\d+\.m3u8(?:[?#]|$)/i.test(original))
+        return [original, original.replace(/\.m3u8(?=[?#]|$)/i, ".ts")];
+      return [original];
+    })();
+
+    const proxy = (u: string) => "/api/stream-proxy?url=" + encodeURIComponent(u);
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape" || e.key === "Backspace") onClose(); };
     window.addEventListener("keydown", esc);
-    v.addEventListener("error", onError);
-    if (!/^https?:\/\//i.test(directUrl)) {
-      setError("URL de vídeo inválida.");
-    } else {
-      const isHls = /\.m3u8(?:[?#]|$)/i.test(directUrl) || /[?&](?:output|type)=hls(?:&|$)/i.test(directUrl);
-      if (isHls) {
-        void import("hls.js").then(({ default: Hls }) => {
-          if (disposed) return;
-          if (Hls.isSupported()) {
-            const h = new Hls({ enableWorker: true, lowLatencyMode: true, maxBufferLength: 20 });
-            hls = h;
-            h.on(Hls.Events.MANIFEST_PARSED, () => { if (!disposed) void v.play().catch(() => setError("Clique no botão de reprodução para iniciar.")); });
-            h.on(Hls.Events.ERROR, (_event, data) => {
-              if (!data.fatal || disposed) return;
-              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                setError("Falha de rede/HLS: servidor indisponível ou bloqueio CORS. Verifique se o fornecedor permite reprodução web.");
-                h.startLoad();
-              } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                setError("Erro de mídia: tentando recuperar a reprodução.");
-                h.recoverMediaError();
-              } else {
-                setError("Stream HLS incompatível com este navegador.");
-                h.destroy(); hls = null;
-              }
+
+    const playDirect = async (u: string) => {
+      v.src = proxy(u);
+      try { await v.play(); return true; } catch { return false; }
+    };
+
+    const start = async () => {
+      if (!candidates.length) { setError("URL de vídeo inválida."); return; }
+      const { default: Hls } = await import("hls.js");
+      const hlsCandidate = candidates.find(u => /\.m3u8(?:[?#]|$)/i.test(u) || /[?&](?:output|type)=hls(?:&|$)/i.test(u));
+
+      if (hlsCandidate && Hls.isSupported()) {
+        const h = new Hls({ enableWorker: true, lowLatencyMode: false, maxBufferLength: 30, manifestLoadingMaxRetry: 2, fragLoadingMaxRetry: 2 });
+        hls = h;
+        h.on(Hls.Events.MANIFEST_PARSED, () => { if (!disposed) void v.play().catch(() => setError("Clique em reproduzir para iniciar.")); });
+        h.on(Hls.Events.ERROR, (_event, data) => {
+          if (!data.fatal || disposed) return;
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { h.recoverMediaError(); return; }
+          h.destroy(); hls = null;
+          const ts = candidates.find(u => /\.ts(?:[?#]|$)/i.test(u));
+          if (ts) {
+            void playDirect(ts).then(ok => {
+              if (!ok && !disposed) setError("Servidor respondeu, mas o formato TS/codec não é reproduzível neste navegador.");
             });
-            h.attachMedia(v);
-            h.loadSource(url);
-          } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
-            v.src = url;
-            void v.play().catch(() => setError("Clique no botão de reprodução para iniciar."));
-          } else setError("Este navegador não suporta HLS.");
-        }).catch(() => { if (!disposed) setError("Falha ao carregar o motor HLS."); });
-      } else {
-        v.src = url;
-        void v.play().catch(() => setError("Formato não suportado, servidor bloqueado ou reprodução não autorizada. Prefira HLS (.m3u8) ou MP4 compatível."));
+          } else {
+            const code = data.response?.code;
+            setError(code ? "Servidor de vídeo respondeu HTTP " + code + "." : "Não foi possível abrir o stream HLS pelo servidor.");
+          }
+        });
+        h.attachMedia(v);
+        h.loadSource(proxy(hlsCandidate));
+        return;
       }
-    }
+
+      const ok = await playDirect(candidates[0]);
+      if (!ok && !disposed) setError("Formato/codec não suportado pelo navegador ou servidor recusou a reprodução.");
+    };
+
+    void start().catch(() => { if (!disposed) setError("Falha ao iniciar o mecanismo de reprodução."); });
     return () => {
       disposed = true;
       hls?.destroy();
-      v.pause();
-      v.removeAttribute("src");
-      v.load();
-      v.removeEventListener("error", onError);
+      v.pause(); v.removeAttribute("src"); v.load();
       window.removeEventListener("keydown", esc);
     };
   }, [item, onClose, retry]);
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
       <div className="flex items-center justify-between gap-3 p-4">
