@@ -1071,7 +1071,7 @@ export const importSourceCatalog = createServerFn({method:"POST"})
     if(!row) throw new Error("Fonte não encontrada.");
     const {decryptPayload}=await import("./server/sources.server");
     const p=decryptPayload(row.payload_enc);
-    const items:{external_key:string;kind:"live"|"movie"|"series";name:string;category:string}[]=[];
+    const items:{external_key:string;kind:"live"|"movie"|"series";name:string;category:string;stream_ref?:string}[]=[];
     if(p.type==="m3u"){
       const r=await catalogFetch(p.m3u_url); if(!r.ok) throw new Error(`Fonte respondeu HTTP ${r.status}.`);
       const text=(await r.text()).slice(0,25_000_000); const lines=text.split(/\r?\n/);
@@ -1083,7 +1083,7 @@ export const importSourceCatalog = createServerFn({method:"POST"})
         const name=safeName(l.split(",").slice(1).join(","),"Canal");
         const category=safeName(attr(l,"group-title"),"Sem categoria");
         const key=createHash("sha256").update(stream).digest("hex").slice(0,32);
-        items.push({external_key:key,kind:"live",name,category});
+        items.push({external_key:key,kind:"live",name,category,stream_ref:stream});
       }
     } else {
       const base=p.server.replace(/\/+$/,""); const auth=`username=${encodeURIComponent(p.username)}&password=${encodeURIComponent(p.password)}`;
@@ -1096,12 +1096,15 @@ export const importSourceCatalog = createServerFn({method:"POST"})
         const arr=await r.json() as any[];
         for(const x of arr.slice(0,30000-items.length)){
           const raw=kind==="series"?x.series_id:x.stream_id; if(raw==null) continue;
-          items.push({external_key:`${kind}:${String(raw)}`,kind,name:safeName(x.name,kind==="live"?"Canal":kind==="movie"?"Filme":"Série"),category:categories.get(`${kind}:${x.category_id}`)||"Sem categoria"});
+          const ext=String(x.container_extension||"").replace(/[^a-zA-Z0-9]/g,"")|| (kind==="live"?"ts":"mp4");
+          const streamRef=kind==="series"?undefined:`${base}/${kind==="live"?"live":"movie"}/${encodeURIComponent(p.username)}/${encodeURIComponent(p.password)}/${raw}.${ext}`;
+          items.push({external_key:`${kind}:${String(raw)}`,kind,name:safeName(x.name,kind==="live"?"Canal":kind==="movie"?"Filme":"Série"),category:categories.get(`${kind}:${x.category_id}`)||"Sem categoria",stream_ref:streamRef});
         }
       }
     }
     await q("DELETE FROM source_catalog_items WHERE source_id=$1",[data.source_id]);
-    for(const x of items) await q("INSERT INTO source_catalog_items(source_id,external_key,kind,name,category) VALUES ($1,$2,$3,$4,$5) ON CONFLICT(source_id,external_key) DO UPDATE SET kind=EXCLUDED.kind,name=EXCLUDED.name,category=EXCLUDED.category,imported_at=now()",[data.source_id,x.external_key,x.kind,x.name,x.category]);
+    const {encryptSecret}=await import("./server/sources.server");
+    for(const x of items) await q("INSERT INTO source_catalog_items(source_id,external_key,kind,name,category,stream_ref_enc) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(source_id,external_key) DO UPDATE SET kind=EXCLUDED.kind,name=EXCLUDED.name,category=EXCLUDED.category,stream_ref_enc=EXCLUDED.stream_ref_enc,imported_at=now()",[data.source_id,x.external_key,x.kind,x.name,x.category,x.stream_ref?encryptSecret(x.stream_ref):null]);
     await audit({...actor(u),action:"source.catalog_import",entity:"source",entityId:data.source_id,details:{items:items.length}});
     return {ok:true,count:items.length};
   });
@@ -1121,6 +1124,32 @@ export const savePlaylistItemRule=createServerFn({method:"POST"})
    VALUES($1,$2,$3,$4,$5) ON CONFLICT(playlist_id,catalog_item_id) DO UPDATE SET enabled=EXCLUDED.enabled,custom_name=EXCLUDED.custom_name,custom_category=EXCLUDED.custom_category`,
   [data.playlist_id,data.item_id,data.enabled,data.custom_name||null,data.custom_category||null]);
   await audit({...actor(u),action:"playlist.item_rule",entity:"playlist",entityId:data.playlist_id,details:{item_id:data.item_id,enabled:data.enabled}});return{ok:true}});
+
+
+function m3uClean(v:string){return v.replace(/[\r\n"]/g," ").trim();}
+export const exportPlaylistM3u=createServerFn({method:"POST"})
+ .inputValidator(d=>z.object({playlist_id:uuid}).parse(d))
+ .handler(async({data})=>{
+   const u=await requireAdmin(["admin"]);
+   const p=await q1<{name:string}>("SELECT name FROM playlists WHERE id=$1 AND active",[data.playlist_id]);
+   if(!p) throw new Error("Lista não encontrada ou inativa.");
+   const rows=await q<{id:string;name:string;category:string;custom_name:string|null;custom_category:string|null;stream_ref_enc:string|null}>(
+    `SELECT ci.id,ci.name,ci.category,r.custom_name,r.custom_category,ci.stream_ref_enc
+     FROM source_catalog_items ci JOIN playlist_sources ps ON ps.source_id=ci.source_id AND ps.playlist_id=$1 AND ps.active
+     LEFT JOIN playlist_item_rules r ON r.playlist_id=$1 AND r.catalog_item_id=ci.id
+     WHERE ci.kind IN ('live','movie') AND coalesce(r.enabled,true)=true AND ci.stream_ref_enc IS NOT NULL
+     ORDER BY ps.priority,coalesce(r.sort_order,100),coalesce(r.custom_category,ci.category),coalesce(r.custom_name,ci.name)`,[data.playlist_id]);
+   const {decryptSecret}=await import("./server/sources.server");
+   const seen=new Set<string>(); const lines=["#EXTM3U"];
+   for(const x of rows){
+     let url:string; try{url=decryptSecret(x.stream_ref_enc!)}catch{continue}
+     if(seen.has(url)) continue; seen.add(url);
+     const name=m3uClean(x.custom_name||x.name),group=m3uClean(x.custom_category||x.category);
+     lines.push(`#EXTINF:-1 group-title="${group}",${name}`,url);
+   }
+   await audit({...actor(u),action:"playlist.export_m3u",entity:"playlist",entityId:data.playlist_id,details:{items:seen.size}});
+   return {filename:`${p.name.replace(/[^a-zA-Z0-9_-]+/g,"-")||"maxon-play"}.m3u`,content:lines.join("\n"),count:seen.size};
+ });
 
 // ---------------- Editor de listas ----------------
 export type Playlist = {
