@@ -277,6 +277,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     let hls: import("hls.js").default | null = null;
     let tsPlayer: { destroy: () => void } | null = null;
     let startupTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastProgress = 0;
     setError("");
 
     const armStartupWatch = (label: string) => {
@@ -287,8 +288,15 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
       }, 12000);
     };
     const clearStartupWatch = () => { if (startupTimer) { clearTimeout(startupTimer); startupTimer = null; } };
-    v.addEventListener("playing", clearStartupWatch);
-    v.addEventListener("loadeddata", clearStartupWatch);
+    const onProgress = () => {
+      if (v.currentTime > lastProgress + 0.05) {
+        lastProgress = v.currentTime;
+        clearStartupWatch();
+        setError("");
+      }
+    };
+    v.addEventListener("playing", onProgress);
+    v.addEventListener("timeupdate", onProgress);
 
     const original = item.url.trim();
     const candidates = /^https?:\/\//i.test(original) ? [original] : [];
@@ -306,6 +314,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     const start = async () => {
       if (!candidates.length) { setError("URL de vídeo inválida."); return; }
       const detected = item.kind === "live" ? await probe(candidates[0]) : null;
+      if (disposed) return;
       if (detected && !detected.ok) { const reason = detected.detail === "timeout" ? "tempo limite ao conectar na origem" : detected.detail === "dns" ? "servidor de origem não localizado (DNS)" : detected.detail === "connection-refused" ? "servidor de origem recusou a conexão" : detected.detail === "connection-failed" ? "conexão com a origem caiu ou falhou" : "falha ao acessar o servidor de origem"; setError("Live indisponível: HTTP " + detected.status + " — " + reason + "."); return; }
       const { default: Hls } = await import("hls.js");
       const hlsCandidate = detected?.format === "hls" ? candidates[0] : candidates.find(u => /\.m3u8(?:[?#]|$)/i.test(u) || /[?&](?:output|type)=hls(?:&|$)/i.test(u));
@@ -371,7 +380,13 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
         const { default: mpegts } = await import("mpegts.js");
         if (!mpegts.isSupported()) { setError("MPEG-TS detectado, mas Media Source não é suportado."); return; }
         const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: proxy(candidates[0]) }, { enableWorker: false });
-        tsPlayer = player; player.attachMediaElement(v); player.load();
+        tsPlayer = player;
+        player.on(mpegts.Events.ERROR, (type: string, detail: string, info?: { code?: number; msg?: string }) => {
+          if (disposed) return;
+          const code = typeof info?.code === "number" ? info.code : null;
+          setError(code ? "MPEG-TS falhou: HTTP " + code + " — " + detail + "." : "MPEG-TS falhou: " + type + " / " + detail + ".");
+        });
+        player.attachMediaElement(v); player.load();
         armStartupWatch("MPEG-TS");
         void player.play().catch(() => setError("MPEG-TS detectado, mas a reprodução não iniciou.")); return;
       }
@@ -384,8 +399,8 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     return () => {
       disposed = true;
       clearStartupWatch();
-      v.removeEventListener("playing", clearStartupWatch);
-      v.removeEventListener("loadeddata", clearStartupWatch);
+      v.removeEventListener("playing", onProgress);
+      v.removeEventListener("timeupdate", onProgress);
       hls?.destroy();
       tsPlayer?.destroy();
       v.pause(); v.removeAttribute("src"); v.load();
