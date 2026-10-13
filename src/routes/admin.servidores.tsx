@@ -1,40 +1,86 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, Server } from "lucide-react";
+import { Activity, Plus, RefreshCw, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { DataTable, Field, PageHeader, Td, useAction, useAdminQuery } from "@/components/admin-ui";
-import { deleteProviderServer, listProviderServers, saveProviderServer, type ProviderServer } from "@/lib/admin.functions";
+import { deleteProviderServer, listProviderServers, saveProviderServer, testProviderServer, type ProviderServer } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin/servidores")({ component: Servidores });
+
+function healthLabel(s: ProviderServer) {
+  if (!s.health_status) return <span className="text-muted-foreground">Não testado</span>;
+  if (s.health_status === "online") return <span className="font-medium text-success">● Online</span>;
+  if (s.health_status === "respondeu") return <span className="font-medium text-amber-500">● Respondeu</span>;
+  return <span className="font-medium text-destructive">● Offline</span>;
+}
+function healthDetail(s: ProviderServer) {
+  if (!s.health_status) return "—";
+  const parts = [];
+  if (s.health_http) parts.push(`HTTP ${s.health_http}`);
+  if (s.health_latency_ms != null) parts.push(`${s.health_latency_ms} ms`);
+  return parts.join(" · ") || "Sem resposta";
+}
 
 function Servidores() {
   const list = useServerFn(listProviderServers);
   const save = useServerFn(saveProviderServer);
   const del = useServerFn(deleteProviderServer);
+  const test = useServerFn(testProviderServer);
   const act = useAction();
   const { data = [] } = useAdminQuery("provider-servers", () => list());
   const [editing, setEditing] = useState<ProviderServer | "new" | null>(null);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testingAll, setTestingAll] = useState(false);
   const current = editing === "new" ? null : editing;
+
+  const runTest = async (id: string) => {
+    setTesting(id);
+    try { await act(test({ data: { id } }), "Teste concluído.", ["provider-servers"]); }
+    finally { setTesting(null); }
+  };
+  const runAll = async () => {
+    setTestingAll(true);
+    try {
+      for (const s of data.filter((x) => x.active)) await test({ data: { id: s.id } });
+      await act(Promise.resolve({ ok: true }), "Todos os servidores ativos foram testados.", ["provider-servers"]);
+    } finally { setTestingAll(false); }
+  };
 
   return (
     <>
       <PageHeader
         title="Servidores"
-        desc="DNS/servidores autorizados fornecidos pelo seu provedor."
-        action={<Button variant="hero" onClick={() => setEditing("new")}><Plus /> Novo servidor</Button>}
+        desc="DNS/servidores autorizados fornecidos pelo seu provedor. Teste disponibilidade e latência sem expor credenciais."
+        action={
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={runAll} disabled={testingAll || data.length === 0}>
+              <RefreshCw className={testingAll ? "animate-spin" : ""} /> {testingAll ? "Testando…" : "Testar todos"}
+            </Button>
+            <Button variant="hero" onClick={() => setEditing("new")}><Plus /> Novo servidor</Button>
+          </div>
+        }
       />
-      <DataTable head={["Nome", "DNS / URL base", "Prioridade", "Status", ""]} empty={data.length === 0}>
+      <div className="mb-4 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        <Activity className="mr-2 inline h-4 w-4 text-primary" />
+        O teste mede resposta HTTP e tempo do servidor. HTTP 404 ainda significa que o servidor respondeu; não confirma canais nem credenciais.
+      </div>
+      <DataTable head={["Nome", "DNS / URL base", "Prioridade", "Cadastro", "Saúde", "Resposta", ""]} empty={data.length === 0}>
         {data.map((s) => (
           <tr key={s.id}>
             <Td className="font-medium">{s.name}</Td>
             <Td className="text-muted-foreground">{s.base_url}</Td>
             <Td>{s.priority}</Td>
             <Td>{s.active ? "Ativo" : "Inativo"}</Td>
+            <Td>{healthLabel(s)}</Td>
+            <Td className="text-muted-foreground">{healthDetail(s)}</Td>
             <Td>
               <div className="flex gap-2">
+                <Button size="sm" variant="secondary" disabled={testing === s.id} onClick={() => void runTest(s.id)}>
+                  {testing === s.id ? "Testando…" : "Testar"}
+                </Button>
                 <Button size="sm" variant="secondary" onClick={() => setEditing(s)}>Editar</Button>
                 <Button size="sm" variant="destructive" onClick={() => {
                   if (confirm(`Remover "${s.name}"?`))
