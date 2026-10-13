@@ -160,8 +160,20 @@ async function streamProbe(request: Request): Promise<Response | null> {
     const ts = /mp2t|mpeg-ts/i.test(ct) || (buf.length > 188 && buf[0] === 0x47 && buf[188] === 0x47);
     const mp4 = /video\/mp4/i.test(ct) || (buf.length > 12 && String.fromCharCode(...buf.slice(4, 8)) === "ftyp");
     return Response.json({ ok: upstream.ok, status: upstream.status, contentType: ct || "desconhecido", format: hls ? "hls" : ts ? "mpegts" : mp4 ? "mp4" : "unknown" }, { headers: { "cache-control": "no-store" } });
-  } catch {
-    return Response.json({ ok: false, status: 502, contentType: "desconhecido", format: "unknown" }, { status: 200, headers: { "cache-control": "no-store" } });
+  } catch (e) {
+    const name = e instanceof Error ? e.name : "";
+    const message = e instanceof Error ? e.message : "";
+    const cause = e instanceof Error && "cause" in e ? String((e as Error & { cause?: unknown }).cause ?? "") : "";
+    const detail = name === "TimeoutError" || /timeout/i.test(message)
+      ? "timeout"
+      : /ENOTFOUND|EAI_AGAIN|dns/i.test(message + cause)
+        ? "dns"
+        : /ECONNREFUSED|connection refused/i.test(message + cause)
+          ? "connection-refused"
+          : /ECONNRESET|socket|fetch failed/i.test(message + cause)
+            ? "connection-failed"
+            : "upstream-fetch";
+    return Response.json({ ok: false, status: 502, contentType: "desconhecido", format: "unknown", detail }, { status: 200, headers: { "cache-control": "no-store" } });
   }
 }
 
