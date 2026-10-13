@@ -267,38 +267,80 @@ function Player() {
 
 function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
-    let hls: { destroy: () => void } | null = null;
-    if (/\.m3u8(\?|$)/.test(item.url) && !v.canPlayType("application/vnd.apple.mpegurl")) {
-      void import("hls.js").then(({ default: Hls }) => {
-        if (!Hls.isSupported()) return;
-        const h = new Hls();
-        h.loadSource(item.url);
-        h.attachMedia(v);
-        hls = h;
-      });
-    } else v.src = item.url;
-    void v.play().catch(() => undefined);
+    let disposed = false;
+    let hls: import("hls.js").default | null = null;
+    setError("");
+    const url = item.url.trim();
+    const onError = () => setError("Não foi possível reproduzir este stream. Verifique o formato, a autorização e a disponibilidade do servidor.");
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape" || e.key === "Backspace") onClose();
     };
     window.addEventListener("keydown", esc);
+    v.addEventListener("error", onError);
+    if (window.location.protocol === "https:" && url.startsWith("http:")) {
+      setError("Este stream usa HTTP e o site usa HTTPS. O navegador bloqueia conteúdo misto. Solicite ao fornecedor uma URL HTTPS/HLS.");
+    } else if (!/^https?:\/\//i.test(url)) {
+      setError("URL de vídeo inválida.");
+    } else {
+      const isHls = /\.m3u8(?:[?#]|$)/i.test(url) || /[?&](?:output|type)=hls(?:&|$)/i.test(url);
+      if (isHls) {
+        void import("hls.js").then(({ default: Hls }) => {
+          if (disposed) return;
+          if (Hls.isSupported()) {
+            const h = new Hls({ enableWorker: true, lowLatencyMode: true, maxBufferLength: 20 });
+            hls = h;
+            h.on(Hls.Events.MANIFEST_PARSED, () => { if (!disposed) void v.play().catch(() => setError("Clique no botão de reprodução para iniciar.")); });
+            h.on(Hls.Events.ERROR, (_event, data) => {
+              if (!data.fatal || disposed) return;
+              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                setError("Falha de rede/HLS: servidor indisponível ou bloqueio CORS. Verifique se o fornecedor permite reprodução web.");
+                h.startLoad();
+              } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                setError("Erro de mídia: tentando recuperar a reprodução.");
+                h.recoverMediaError();
+              } else {
+                setError("Stream HLS incompatível com este navegador.");
+                h.destroy(); hls = null;
+              }
+            });
+            h.attachMedia(v);
+            h.loadSource(url);
+          } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
+            v.src = url;
+            void v.play().catch(() => setError("Clique no botão de reprodução para iniciar."));
+          } else setError("Este navegador não suporta HLS.");
+        }).catch(() => { if (!disposed) setError("Falha ao carregar o motor HLS."); });
+      } else {
+        v.src = url;
+        void v.play().catch(() => setError("Formato não suportado, servidor bloqueado ou reprodução não autorizada. Prefira HLS (.m3u8) ou MP4 compatível."));
+      }
+    }
     return () => {
+      disposed = true;
       hls?.destroy();
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+      v.removeEventListener("error", onError);
       window.removeEventListener("keydown", esc);
     };
-  }, [item, onClose]);
+  }, [item, onClose, retry]);
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <div className="flex items-center justify-between p-4">
-        <p className="font-semibold">{item.name}</p>
-        <Button variant="secondary" onClick={onClose}>
-          Fechar (Esc)
-        </Button>
+      <div className="flex items-center justify-between gap-3 p-4">
+        <p className="truncate font-semibold">{item.name}</p>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setRetry(n => n + 1)}>Tentar novamente</Button>
+          <Button variant="secondary" onClick={onClose}>Fechar (Esc)</Button>
+        </div>
       </div>
-      <video ref={ref} controls autoPlay className="h-full w-full bg-background" />
+      {error && <p role="alert" className="mx-4 mb-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+      <video ref={ref} controls playsInline autoPlay className="min-h-0 flex-1 w-full bg-black" />
     </div>
   );
 }
