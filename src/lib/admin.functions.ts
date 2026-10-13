@@ -284,6 +284,38 @@ export const listDevices = createServerFn({ method: "GET" }).handler(async () =>
      FROM devices d ORDER BY d.last_seen_at DESC NULLS LAST LIMIT 500`,
   );
 });
+export const activateDeviceByTvCode = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    code: z.string().trim().regex(/^\\d{6}$/, "Código deve ter 6 números."),
+    customer_id: uuid.nullable(), plan_id: uuid, source_id: uuid.nullable().default(null),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin();
+    const pair = await q1<{ id:string; device_id:string; display_id:string; status:string; expires_at:string }>(
+      `SELECT pc.id, pc.device_id, d.display_id, pc.status, pc.expires_at
+       FROM tv_pairing_codes pc JOIN devices d ON d.id=pc.device_id
+       WHERE pc.code=$1 ORDER BY pc.created_at DESC LIMIT 1`, [data.code]);
+    if (!pair) throw new Error("Código da TV não encontrado.");
+    if (pair.status !== "pendente") throw new Error("Este código da TV já foi utilizado ou cancelado.");
+    if (new Date(pair.expires_at).getTime() <= Date.now()) {
+      await q("UPDATE tv_pairing_codes SET status='expirado' WHERE id=$1", [pair.id]);
+      throw new Error("Código da TV expirado. Gere um novo código no aparelho.");
+    }
+    const plan = await q1<{ duration_days:number }>("SELECT duration_days FROM plans WHERE id=$1 AND active", [data.plan_id]);
+    if (!plan) throw new Error("Plano não encontrado ou inativo.");
+    const existing = await q1<{ id:string }>("SELECT id FROM activations WHERE device_id=$1 AND status='ativa' AND expires_at > now() ORDER BY expires_at DESC LIMIT 1", [pair.device_id]);
+    if (existing) throw new Error("Este aparelho já possui uma ativação ativa.");
+    const key = generateActivationKey();
+    const activation = await q1<{ id:string }>(
+      `INSERT INTO activations(customer_id,plan_id,device_id,key_hash,key_last4,status,starts_at,expires_at,created_by,source_id)
+       VALUES ($1,$2,$3,$4,$5,'ativa',now(),now() + ($6 || ' days')::interval,$7,$8) RETURNING id`,
+      [data.customer_id,data.plan_id,pair.device_id,hashKey(key),key.slice(-4),String(plan.duration_days),u.id,data.source_id]);
+    await q("UPDATE devices SET status='ativo', source_id=$2, config_rev=config_rev+1 WHERE id=$1", [pair.device_id,data.source_id]);
+    await q("UPDATE tv_pairing_codes SET status='ativado', activation_id=$2, activated_at=now() WHERE id=$1", [pair.id,activation!.id]);
+    await audit({ ...actor(u), action:"device.activate_by_tv_code", entity:"activation", entityId:activation!.id, details:{ code:data.code, display_id:pair.display_id, plan_id:data.plan_id } });
+    return { ok:true, activation_id:activation!.id, display_id:pair.display_id };
+  });
+
 export const activateDeviceByDisplayId = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z.object({
@@ -302,9 +334,9 @@ export const activateDeviceByDisplayId = createServerFn({ method: "POST" })
     );
     if (!device) {
       device = await q1<{ id: string }>(
-        `INSERT INTO devices(display_id,platform,model,app_version,status,last_seen_at)
-         VALUES ($1,'android','Aguardando aparelho','—','ativo',NULL) RETURNING id`,
-        [displayId],
+        `INSERT INTO devices(device_uid,display_id,platform,model,app_version,status,last_seen_at)
+         VALUES ($1,$2,'android','Aguardando aparelho','—','ativo',NULL) RETURNING id`,
+        [\`manual:\${displayId}\`, displayId],
       );
     }
     const plan = await q1<{ duration_days: number }>(
