@@ -1,9 +1,9 @@
 import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
-import { a as Td, i as StatusBadge, l as useAdminQuery, r as PageHeader, t as DataTable } from "./admin-ui-C_f-BTaD.mjs";
 import { t as useServerFn } from "./useServerFn-CrZF2pjq.mjs";
-import { p as getDashboard } from "./admin.functions-mjSXHvmn.mjs";
+import { p as getDashboard } from "./admin.functions-BiPsV3Mo.mjs";
+import { a as Td, i as StatusBadge, l as useAdminQuery, r as PageHeader, t as DataTable } from "./admin-ui-C_f-BTaD.mjs";
 import { a as fmtDate, i as brl, o as fmtDateTime } from "./brand-DsXviQDH.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin.index-DgPftugq.js
+//#region node_modules/.nitro/vite/services/ssr/assets/admin.index-BmYKcCvZ.js
 var import_jsx_runtime = require_jsx_runtime();
 function Dashboard() {
 	const fn = useServerFn(getDashboard);

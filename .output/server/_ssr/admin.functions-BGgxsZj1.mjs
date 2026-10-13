@@ -5,7 +5,7 @@ import { t as createServerRpc } from "./createServerRpc-CxD4EZ5P.mjs";
 import { _ as verifyJwt, a as generateActivationKey, c as isProduction, d as q, f as q1, g as sweepExpired, h as signJwt, i as env, m as ready, o as hashKey, p as rateLimit, s as hashPassword, u as orderNumber, v as verifyPassword } from "./ratelimit.server-Bwk2PF-V.mjs";
 import { t as audit } from "./audit.server-Oy8fc_dY.mjs";
 import { hasAnyAdmin } from "./bootstrap.server-BQbw6Uxm.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/admin.functions-CzIR_vfP.js
+//#region node_modules/.nitro/vite/services/ssr/assets/admin.functions-BGgxsZj1.js
 var COOKIE = "maxon_session";
 var TTL = 28800;
 function startSession(user) {
@@ -1410,13 +1410,21 @@ var uploadM3uSource = createServerFn({ method: "POST" }).inputValidator((d) => o
 		type: "m3u",
 		m3u_url: `upload://${createHash("sha256").update(raw).digest("hex").slice(0, 24)}/${data.filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`
 	});
-	const source = await q1("INSERT INTO sources(name,type,customer_id,payload_enc,display_hint) VALUES ($1,'m3u',$2,$3,$4) RETURNING id", [
+	let source = await q1("SELECT id FROM sources WHERE name=$1 AND type='m3u' AND customer_id IS NOT DISTINCT FROM $2 AND display_hint LIKE 'M3U enviado · %' ORDER BY updated_at DESC LIMIT 1", [data.name, data.customer_id]);
+	if (source) {
+		await q("UPDATE sources SET payload_enc=$2,display_hint=$3,updated_at=now(),version=version+1 WHERE id=$1", [
+			source.id,
+			enc,
+			`M3U enviado · ${data.filename.slice(0, 80)}`
+		]);
+		await q("DELETE FROM source_catalog_items WHERE source_id=$1", [source.id]);
+	} else source = await q1("INSERT INTO sources(name,type,customer_id,payload_enc,display_hint) VALUES ($1,'m3u',$2,$3,$4) RETURNING id", [
 		data.name,
 		data.customer_id,
 		enc,
 		`M3U enviado · ${data.filename.slice(0, 80)}`
 	]);
-	if (!source) throw new Error("Não foi possível criar a fonte.");
+	if (!source) throw new Error("Não foi possível criar ou atualizar a fonte.");
 	let pending = null, count = 0;
 	const parsed = [];
 	const seriesRx = /\b(series?|séries?|temporadas?|novelas?|animes?)\b|\bs\d{1,2}\b|\btemporada\b/i;
