@@ -14,6 +14,7 @@ import migration006 from "../../../db/migrations/006_playlists.sql?raw";
 import migration007 from "../../../db/migrations/007_playlist_catalog.sql?raw";
 import migration008 from "../../../db/migrations/008_playlist_export.sql?raw";
 import migration009 from "../../../db/migrations/009_category_rules.sql?raw";
+import migration010 from "../../../db/migrations/010_tv_pairing.sql?raw";
 import seedSql from "../../../db/seed.sql?raw";
 import { env, isProduction } from "./env.server";
 
@@ -27,6 +28,7 @@ export const MIGRATIONS: { version: string; sql: string }[] = [
   { version: "007_playlist_catalog", sql: migration007 },
   { version: "008_playlist_export", sql: migration008 },
   { version: "009_category_rules", sql: migration009 },
+  { version: "010_tv_pairing", sql: migration010 },
 ];
 
 type Row = Record<string, unknown>;
