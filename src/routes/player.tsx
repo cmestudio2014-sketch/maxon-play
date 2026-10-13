@@ -282,6 +282,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     const candidates = /^https?:\/\//i.test(original) ? [original] : [];
 
     const proxy = (u: string) => "/api/stream-proxy?url=" + encodeURIComponent(u);
+    const probe = async (u: string) => (await fetch("/api/stream-probe?url=" + encodeURIComponent(u))).json() as Promise<{ ok: boolean; status: number; contentType: string; format: "hls" | "mpegts" | "mp4" | "unknown" }>;
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape" || e.key === "Backspace") onClose(); };
     window.addEventListener("keydown", esc);
 
@@ -292,8 +293,10 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
 
     const start = async () => {
       if (!candidates.length) { setError("URL de vídeo inválida."); return; }
+      const detected = item.kind === "live" ? await probe(candidates[0]) : null;
+      if (detected && !detected.ok) { setError("Live recusado pelo servidor: HTTP " + detected.status + "."); return; }
       const { default: Hls } = await import("hls.js");
-      const hlsCandidate = candidates.find(u => /\.m3u8(?:[?#]|$)/i.test(u) || /[?&](?:output|type)=hls(?:&|$)/i.test(u));
+      const hlsCandidate = detected?.format === "hls" ? candidates[0] : candidates.find(u => /\.m3u8(?:[?#]|$)/i.test(u) || /[?&](?:output|type)=hls(?:&|$)/i.test(u));
 
       if (hlsCandidate && Hls.isSupported()) {
         const h = new Hls({ enableWorker: true, lowLatencyMode: false, maxBufferLength: 30, manifestLoadingMaxRetry: 2, fragLoadingMaxRetry: 2 });
@@ -351,8 +354,15 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
         return;
       }
 
+      if (detected?.format === "mpegts") {
+        const { default: mpegts } = await import("mpegts.js");
+        if (!mpegts.isSupported()) { setError("MPEG-TS detectado, mas Media Source não é suportado."); return; }
+        const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: proxy(candidates[0]) }, { enableWorker: false });
+        tsPlayer = player; player.attachMediaElement(v); player.load();
+        void player.play().catch(() => setError("MPEG-TS detectado, mas a reprodução não iniciou.")); return;
+      }
       const ok = await playDirect(candidates[0]);
-      if (!ok && !disposed) setError("Formato/codec não suportado pelo navegador ou servidor recusou a reprodução.");
+      if (!ok && !disposed) setError("Servidor respondeu HTTP " + (detected?.status ?? "?") + ", formato " + (detected?.format ?? "desconhecido") + ", tipo " + (detected?.contentType ?? "desconhecido") + ".");
     };
 
     void start().catch(() => { if (!disposed) setError("Falha ao iniciar o mecanismo de reprodução."); });
