@@ -275,8 +275,12 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     let disposed = false;
     let hls: import("hls.js").default | null = null;
     setError("");
-    const url = item.url.trim();
-    const onError = () => setError("Não foi possível reproduzir este stream. Verifique o formato, a autorização e a disponibilidade do servidor.");
+    const originalUrl = item.url.trim();
+    const xtreamTs = /\/live\/[^/]+\/[^/]+\/\d+\.ts(?:[?#]|$)/i.test(originalUrl);
+    const url = xtreamTs ? originalUrl.replace(/\.ts(?=[?#]|$)/i, ".m3u8") : originalUrl;
+    const onError = () => setError(xtreamTs
+      ? "HLS não disponível neste servidor. TS direto pode ser incompatível com o navegador; solicite uma URL HLS ao fornecedor."
+      : "Não foi possível reproduzir este stream. Verifique o formato, a autorização e a disponibilidade do servidor.");
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape" || e.key === "Backspace") onClose();
     };
