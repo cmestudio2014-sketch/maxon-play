@@ -1112,6 +1112,31 @@ export const importSourceCatalog = createServerFn({method:"POST"})
     await audit({...actor(u),action:"source.catalog_import",entity:"source",entityId:data.source_id,details:{items:items.length}});
     return {ok:true,count:items.length};
   });
+
+export type CatalogCategory={source_id:string;source_name:string;category:string;kind:"live"|"movie"|"series";items:number;custom_category:string|null};
+export const listPlaylistCategories=createServerFn({method:"POST"})
+ .inputValidator(d=>z.object({playlist_id:uuid}).parse(d))
+ .handler(async({data})=>{await requireAdmin();return q<CatalogCategory>(
+ `SELECT ci.source_id,s.name source_name,ci.category,
+   coalesce(cr.kind, CASE WHEN count(*) FILTER(WHERE ci.kind='series')>=greatest(count(*) FILTER(WHERE ci.kind='movie'),count(*) FILTER(WHERE ci.kind='live')) THEN 'series'
+                          WHEN count(*) FILTER(WHERE ci.kind='movie')>count(*) FILTER(WHERE ci.kind='live') THEN 'movie' ELSE 'live' END) kind,
+   count(*)::int items,cr.custom_category
+   FROM source_catalog_items ci
+   JOIN playlist_sources ps ON ps.source_id=ci.source_id AND ps.playlist_id=$1 AND ps.active
+   JOIN sources s ON s.id=ci.source_id
+   LEFT JOIN playlist_category_rules cr ON cr.playlist_id=$1 AND cr.source_id=ci.source_id AND cr.source_category=ci.category
+   GROUP BY ci.source_id,s.name,ci.category,cr.kind,cr.custom_category ORDER BY s.name,ci.category`,[data.playlist_id])});
+export const savePlaylistCategoryRule=createServerFn({method:"POST"})
+ .inputValidator(d=>z.object({playlist_id:uuid,source_id:uuid,category:z.string().min(1).max(180),kind:z.enum(["live","movie","series"]),custom_category:z.string().trim().max(120).nullable().optional()}).parse(d))
+ .handler(async({data})=>{const u=await requireAdmin(["admin"]);
+  await q(`INSERT INTO playlist_category_rules(playlist_id,source_id,source_category,kind,custom_category)
+   VALUES($1,$2,$3,$4,$5) ON CONFLICT(playlist_id,source_id,source_category)
+   DO UPDATE SET kind=EXCLUDED.kind,custom_category=EXCLUDED.custom_category,updated_at=now()`,
+   [data.playlist_id,data.source_id,data.category,data.kind,data.custom_category||null]);
+  await q("UPDATE source_catalog_items SET kind=$3 WHERE source_id=$1 AND category=$2",[data.source_id,data.category,data.kind]);
+  await audit({...actor(u),action:"playlist.category_rule",entity:"playlist",entityId:data.playlist_id,details:{source_id:data.source_id,category:data.category,kind:data.kind}});
+  return{ok:true}});
+
 export type CatalogItem={id:string;source_id:string;source_name:string;kind:"live"|"movie"|"series";name:string;category:string;enabled:boolean;custom_name:string|null;custom_category:string|null};
 export const listPlaylistCatalog = createServerFn({method:"POST"})
  .inputValidator(d=>z.object({playlist_id:uuid}).parse(d))
