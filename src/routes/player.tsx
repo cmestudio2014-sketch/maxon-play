@@ -279,14 +279,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     setError("");
 
     const original = item.url.trim();
-    const candidates = (() => {
-      if (!/^https?:\/\//i.test(original)) return [];
-      if (/\/live\/[^/]+\/[^/]+\/\d+\.ts(?:[?#]|$)/i.test(original))
-        return [original.replace(/\.ts(?=[?#]|$)/i, ".m3u8"), original];
-      if (/\/live\/[^/]+\/[^/]+\/\d+\.m3u8(?:[?#]|$)/i.test(original))
-        return [original, original.replace(/\.m3u8(?=[?#]|$)/i, ".ts")];
-      return [original];
-    })();
+    const candidates = /^https?:\/\//i.test(original) ? [original] : [];
 
     const proxy = (u: string) => "/api/stream-proxy?url=" + encodeURIComponent(u);
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape" || e.key === "Backspace") onClose(); };
