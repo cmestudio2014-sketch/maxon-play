@@ -159,15 +159,21 @@ function Clientes() {
                   <option value="bloqueado">Bloqueado</option>
                 </select>
               </Field>
-              <Button type="submit" variant="hero" className="w-full">
-                Salvar
-              </Button>
-              {form.id && (
-                <Button type="button" variant="destructive" className="w-full" onClick={removeCurrent}>
+              <div className="grid gap-2 pt-1">
+                <Button type="submit" variant="hero" className="w-full">
+                  Salvar
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className={form.id ? "w-full" : "hidden"}
+                  onClick={removeCurrent}
+                  disabled={!form.id}
+                >
                   <Trash2 />
                   Excluir cliente
                 </Button>
-              )}
+              </div>
             </form>
           )}
         </DialogContent>
