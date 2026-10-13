@@ -12,6 +12,7 @@ import migration004 from "../../../db/migrations/004_servers.sql?raw";
 import migration005 from "../../../db/migrations/005_server_health.sql?raw";
 import migration006 from "../../../db/migrations/006_playlists.sql?raw";
 import migration007 from "../../../db/migrations/007_playlist_catalog.sql?raw";
+import migration008 from "../../../db/migrations/008_playlist_export.sql?raw";
 import seedSql from "../../../db/seed.sql?raw";
 import { env, isProduction } from "./env.server";
 
@@ -23,6 +24,7 @@ export const MIGRATIONS: { version: string; sql: string }[] = [
   { version: "005_server_health", sql: migration005 },
   { version: "006_playlists", sql: migration006 },
   { version: "007_playlist_catalog", sql: migration007 },
+  { version: "008_playlist_export", sql: migration008 },
 ];
 
 type Row = Record<string, unknown>;
