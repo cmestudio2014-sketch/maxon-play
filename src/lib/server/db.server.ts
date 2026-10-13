@@ -10,6 +10,7 @@ import migration002 from "../../../db/migrations/002_sources.sql?raw";
 import migration003 from "../../../db/migrations/003_customer_credentials.sql?raw";
 import migration004 from "../../../db/migrations/004_servers.sql?raw";
 import migration005 from "../../../db/migrations/005_server_health.sql?raw";
+import migration006 from "../../../db/migrations/006_playlists.sql?raw";
 import seedSql from "../../../db/seed.sql?raw";
 import { env, isProduction } from "./env.server";
 
@@ -19,6 +20,7 @@ export const MIGRATIONS: { version: string; sql: string }[] = [
   { version: "003_customer_credentials", sql: migration003 },
   { version: "004_servers", sql: migration004 },
   { version: "005_server_health", sql: migration005 },
+  { version: "006_playlists", sql: migration006 },
 ];
 
 type Row = Record<string, unknown>;
