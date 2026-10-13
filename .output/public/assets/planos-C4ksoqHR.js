@@ -1,1 +1,0 @@
-import{vt as e}from"./index-B-u_mdla.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`p-10 text-center`,children:`Não encontrado.`});export{n as notFoundComponent};
