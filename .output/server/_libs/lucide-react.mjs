@@ -466,6 +466,21 @@ var MonitorSmartphone = createLucideIcon("monitor-smartphone", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Music2 = createLucideIcon("music-2", [["circle", {
+	cx: "8",
+	cy: "18",
+	r: "4",
+	key: "1fc0mg"
+}], ["path", {
+	d: "M12 18V2l7 4",
+	key: "g04rme"
+}]]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Plus = createLucideIcon("plus", [["path", {
 	d: "M5 12h14",
 	key: "1ays0h"
@@ -728,6 +743,23 @@ var Trash2 = createLucideIcon("trash-2", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var TvMinimal = createLucideIcon("tv-minimal", [["path", {
+	d: "M7 21h10",
+	key: "1b0cd5"
+}], ["rect", {
+	width: "20",
+	height: "14",
+	x: "2",
+	y: "3",
+	rx: "2",
+	key: "48i651"
+}]]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Tv = createLucideIcon("tv", [["path", {
 	d: "m17 2-5 5-5-5",
 	key: "16satq"
@@ -835,4 +867,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { Circle as A, KeyRound as C, Download as D, Film as E, Activity as F, ChevronDown as M, Check as N, Copy as O, ChartColumn as P, Layers as S, Heart as T, MonitorSmartphone as _, Trash2 as a, LogOut as b, Sparkles as c, Settings as d, Server as f, Plus as g, RefreshCw as h, Tv as i, ChevronRight as j, Clapperboard as k, ShoppingCart as l, ScrollText as m, Users as n, Ticket as o, Search as p, UserCog as r, Tag as s, X as t, ShieldCheck as u, MonitorPlay as v, House as w, ListVideo as x, MessageCircle as y };
+export { Copy as A, ListVideo as C, Heart as D, House as E, Check as F, ChartColumn as I, Activity as L, Circle as M, ChevronRight as N, Film as O, ChevronDown as P, LogOut as S, KeyRound as T, Plus as _, TvMinimal as a, MonitorPlay as b, Tag as c, ShieldCheck as d, Settings as f, RefreshCw as g, ScrollText as h, Tv as i, Clapperboard as j, Download as k, Sparkles as l, Search as m, Users as n, Trash2 as o, Server as p, UserCog as r, Ticket as s, X as t, ShoppingCart as u, Music2 as v, Layers as w, MessageCircle as x, MonitorSmartphone as y };
