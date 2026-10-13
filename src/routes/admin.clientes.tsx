@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,7 @@ import {
   useAdminQuery,
 } from "@/components/admin-ui";
 import { fmtDate } from "@/components/brand";
-import { listCustomers, saveCustomer, type Customer } from "@/lib/admin.functions";
+import { deleteCustomer, listCustomers, saveCustomer, type Customer } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin/clientes")({ component: Clientes });
 
@@ -34,6 +34,7 @@ const empty: Form = { name: "", whatsapp: "", email: "", notes: "", status: "ati
 function Clientes() {
   const list = useServerFn(listCustomers);
   const save = useServerFn(saveCustomer);
+  const remove = useServerFn(deleteCustomer);
   const act = useAction();
   const { data = [] } = useAdminQuery("customers", () => list());
   const [form, setForm] = useState<Form | null>(null);
@@ -54,6 +55,12 @@ function Clientes() {
     e.preventDefault();
     if (!form) return;
     const r = await act(save({ data: form }), "Cliente salvo.", ["customers"]);
+    if (r) setForm(null);
+  };
+  const removeCurrent = async () => {
+    if (!form?.id) return;
+    if (!window.confirm(`Excluir o cliente "${form.name}"? Esta ação não pode ser desfeita.`)) return;
+    const r = await act(remove({ data: { id: form.id } }), "Cliente excluído.", ["customers"]);
     if (r) setForm(null);
   };
   return (
@@ -155,6 +162,12 @@ function Clientes() {
               <Button type="submit" variant="hero" className="w-full">
                 Salvar
               </Button>
+              {form.id && (
+                <Button type="button" variant="destructive" className="w-full" onClick={removeCurrent}>
+                  <Trash2 />
+                  Excluir cliente
+                </Button>
+              )}
             </form>
           )}
         </DialogContent>
