@@ -61,6 +61,8 @@ export async function loadXtream(s: {
     if (!r || !r.ok) r = await fetch(`${base}/player_api.php?${body.toString()}`);
     return (await r.json()) as T;
   };
+  const auth = await fetch(`${base}/player_api.php?username=${encodeURIComponent(s.username)}&password=${encodeURIComponent(s.password)}`).then(r => r.json()).catch(() => ({})) as { user_info?: { allowed_output_formats?: string[] } };
+  const liveExt = auth.user_info?.allowed_output_formats?.includes("m3u8") ? "m3u8" : auth.user_info?.allowed_output_formats?.includes("ts") ? "ts" : "ts";
   const [lc, ls, vc, vs, sc, ss] = await Promise.all([
     api<XtCat[]>("get_live_categories"),
     api<XtStream[]>("get_live_streams"),
@@ -81,7 +83,7 @@ export async function loadXtream(s: {
       name: x.name,
       logo: x.stream_icon ?? "",
       group: lm.get(x.category_id) ?? "Geral",
-      url: `${base}/live/${u}/${p}/${x.stream_id}.${x.container_extension || "ts"}`,
+      url: `${base}/live/${u}/${p}/${x.stream_id}.${liveExt}`,
       kind: "live" as const,
     })),
     ...vs.map((x) => ({
