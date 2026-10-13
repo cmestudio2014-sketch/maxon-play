@@ -233,6 +233,26 @@ var Copy = createLucideIcon("copy", [["rect", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Download = createLucideIcon("download", [
+	["path", {
+		d: "M12 15V3",
+		key: "m9g1x1"
+	}],
+	["path", {
+		d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",
+		key: "ih7n3h"
+	}],
+	["path", {
+		d: "m7 10 5 5 5-5",
+		key: "brsn70"
+	}]
+]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var Film = createLucideIcon("film", [
 	["rect", {
 		width: "18",
@@ -815,4 +835,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { ChevronRight as A, KeyRound as C, Copy as D, Film as E, Check as M, ChartColumn as N, Clapperboard as O, Activity as P, Layers as S, Heart as T, MonitorSmartphone as _, Trash2 as a, LogOut as b, Sparkles as c, Settings as d, Server as f, Plus as g, RefreshCw as h, Tv as i, ChevronDown as j, Circle as k, ShoppingCart as l, ScrollText as m, Users as n, Ticket as o, Search as p, UserCog as r, Tag as s, X as t, ShieldCheck as u, MonitorPlay as v, House as w, ListVideo as x, MessageCircle as y };
+export { Circle as A, KeyRound as C, Download as D, Film as E, Activity as F, ChevronDown as M, Check as N, Copy as O, ChartColumn as P, Layers as S, Heart as T, MonitorSmartphone as _, Trash2 as a, LogOut as b, Sparkles as c, Settings as d, Server as f, Plus as g, RefreshCw as h, Tv as i, ChevronRight as j, Clapperboard as k, ShoppingCart as l, ScrollText as m, Users as n, Ticket as o, Search as p, UserCog as r, Tag as s, X as t, ShieldCheck as u, MonitorPlay as v, House as w, ListVideo as x, MessageCircle as y };
