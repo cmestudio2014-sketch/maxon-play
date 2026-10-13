@@ -81,7 +81,7 @@ export async function loadXtream(s: {
       name: x.name,
       logo: x.stream_icon ?? "",
       group: lm.get(x.category_id) ?? "Geral",
-      url: `${base}/live/${u}/${p}/${x.stream_id}.m3u8`,
+      url: `${base}/live/${u}/${p}/${x.stream_id}.${x.container_extension || "ts"}`,
       kind: "live" as const,
     })),
     ...vs.map((x) => ({
