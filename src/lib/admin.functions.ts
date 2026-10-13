@@ -931,6 +931,53 @@ export const listAudit = createServerFn({ method: "GET" }).handler(async () => {
   );
 });
 
+// ---------------- Servidores autorizados ----------------
+export type ProviderServer = {
+  id: string;
+  name: string;
+  base_url: string;
+  priority: number;
+  active: boolean;
+  updated_at: string;
+};
+export const listProviderServers = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
+  return q<ProviderServer>(
+    "SELECT id,name,base_url,priority,active,updated_at::text AS updated_at FROM provider_servers ORDER BY priority,name",
+  );
+});
+const providerServerUrl = z.string().trim().url().max(500).refine((u) => /^https?:\/\//i.test(u), "Use http(s)://");
+export const saveProviderServer = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    id: uuid.optional(),
+    name: z.string().trim().min(2).max(80),
+    base_url: providerServerUrl,
+    priority: z.number().int().min(1).max(999),
+    active: z.boolean(),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin(["admin"]);
+    const baseUrl = data.base_url.replace(/\/+$/, "");
+    let id = data.id;
+    if (id) {
+      await q("UPDATE provider_servers SET name=$2,base_url=$3,priority=$4,active=$5,updated_at=now() WHERE id=$1",
+        [id,data.name,baseUrl,data.priority,data.active]);
+    } else {
+      id = (await q1<{id:string}>("INSERT INTO provider_servers(name,base_url,priority,active) VALUES ($1,$2,$3,$4) RETURNING id",
+        [data.name,baseUrl,data.priority,data.active]))!.id;
+    }
+    await audit({ ...actor(u), action: data.id ? "server.update" : "server.create", entity: "provider_server", entityId: id, details: { name: data.name, priority: data.priority, active: data.active } });
+    return { id };
+  });
+export const deleteProviderServer = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin(["admin"]);
+    await q("DELETE FROM provider_servers WHERE id=$1", [data.id]);
+    await audit({ ...actor(u), action: "server.delete", entity: "provider_server", entityId: data.id });
+    return { ok: true };
+  });
+
 // ---------------- Fontes / Listas autorizadas ----------------
 export type Source = {
   id: string;
