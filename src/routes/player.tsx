@@ -299,7 +299,16 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     v.addEventListener("timeupdate", onProgress);
 
     const original = item.url.trim();
-    const candidates = /^https?:\/\//i.test(original) ? [original] : [];
+    const candidates = /^https?:\/\//i.test(original)
+      ? item.kind === "live"
+        ? [...new Set([
+            original,
+            original.replace(/\.(?:m3u8|ts)(?=([?#]|$))/i, ".ts"),
+            original.replace(/\.(?:m3u8|ts)(?=([?#]|$))/i, ".m3u8"),
+            original.replace(/\.(?:m3u8|ts)(?=([?#]|$))/i, ""),
+          ])]
+        : [original]
+      : [];
 
     const proxy = (u: string) => "/api/stream-proxy?url=" + encodeURIComponent(u);
     const probe = async (u: string) => (await fetch("/api/stream-probe?url=" + encodeURIComponent(u))).json() as Promise<{ ok: boolean; status: number; contentType: string; format: "hls" | "mpegts" | "mp4" | "unknown"; detail?: string }>;
@@ -313,11 +322,22 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
 
     const start = async () => {
       if (!candidates.length) { setError("URL de vídeo inválida."); return; }
-      const detected = item.kind === "live" ? await probe(candidates[0]) : null;
+      let selected = candidates[0];
+      let detected = item.kind === "live" ? await probe(selected) : null;
+      if (item.kind === "live" && detected && !detected.ok) {
+        for (const candidate of candidates.slice(1)) {
+          const result = await probe(candidate);
+          if (disposed) return;
+          if (result.ok) { selected = candidate; detected = result; break; }
+        }
+      }
       if (disposed) return;
-      if (detected && !detected.ok) { setError("Proxy do servidor indisponível; tentando conexão direta com o canal…"); }
+      if (detected && !detected.ok) {
+        setError("O servidor recusou todas as formas de Live testadas (TS, HLS e URL sem extensão): HTTP " + detected.status + ".");
+        return;
+      }
       const { default: Hls } = await import("hls.js");
-      const hlsCandidate = detected?.format === "hls" ? candidates[0] : candidates.find(u => /\.m3u8(?:[?#]|$)/i.test(u) || /[?&](?:output|type)=hls(?:&|$)/i.test(u));
+      const hlsCandidate = detected?.format === "hls" ? selected : candidates.find(u => /\.m3u8(?:[?#]|$)/i.test(u) || /[?&](?:output|type)=hls(?:&|$)/i.test(u));
 
       if (hlsCandidate && Hls.isSupported()) {
         const h = new Hls({ enableWorker: true, lowLatencyMode: false, maxBufferLength: 30, manifestLoadingMaxRetry: 2, fragLoadingMaxRetry: 2 });
@@ -379,7 +399,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
       if (detected?.format === "mpegts") {
         const { default: mpegts } = await import("mpegts.js");
         if (!mpegts.isSupported()) { setError("MPEG-TS detectado, mas Media Source não é suportado."); return; }
-        const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: detected?.ok ? proxy(candidates[0]) : candidates[0] }, { enableWorker: false });
+        const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: proxy(selected) }, { enableWorker: false });
         tsPlayer = player;
         player.on(mpegts.Events.ERROR, (type: string, detail: string, info?: { code?: number; msg?: string }) => {
           if (disposed) return;
@@ -391,7 +411,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
         void player.play().catch(() => setError("MPEG-TS detectado, mas a reprodução não iniciou.")); return;
       }
       armStartupWatch("Stream");
-      const ok = await playDirect(candidates[0]);
+      const ok = await playDirect(selected);
       if (!ok && !disposed) setError("Servidor respondeu HTTP " + (detected?.status ?? "?") + ", formato " + (detected?.format ?? "desconhecido") + ", tipo " + (detected?.contentType ?? "desconhecido") + ".");
     };
 
