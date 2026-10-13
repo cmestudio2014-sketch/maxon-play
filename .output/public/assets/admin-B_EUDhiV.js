@@ -1,1 +1,0 @@
-import{ot as e}from"./index-B6rt4NQV.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`p-10 text-center`,children:`Página não encontrada.`});export{n as notFoundComponent};

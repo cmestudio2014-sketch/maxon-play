@@ -115,6 +115,16 @@ var createLucideIcon = (iconName, iconNode) => {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
+var Activity = createLucideIcon("activity", [["path", {
+	d: "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2",
+	key: "169zse"
+}]]);
+/**
+* @license lucide-react v0.575.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
 var ChartColumn = createLucideIcon("chart-column", [
 	["path", {
 		d: "M3 3v16a2 2 0 0 0 2 2h16",
@@ -731,4 +741,4 @@ var X = createLucideIcon("x", [["path", {
 	key: "d8bk6v"
 }]]);
 //#endregion
-export { ChartColumn as A, Film as C, ChevronRight as D, Circle as E, ChevronDown as O, Heart as S, Clapperboard as T, MessageCircle as _, Ticket as a, KeyRound as b, ShieldCheck as c, Search as d, ScrollText as f, MonitorPlay as g, MonitorSmartphone as h, Tv as i, Check as k, Settings as l, Plus as m, Users as n, Tag as o, RefreshCw as p, UserCog as r, ShoppingCart as s, X as t, Server as u, LogOut as v, Copy as w, House as x, ListVideo as y };
+export { ChartColumn as A, Film as C, ChevronRight as D, Circle as E, ChevronDown as O, Heart as S, Clapperboard as T, MessageCircle as _, Ticket as a, KeyRound as b, ShieldCheck as c, Search as d, ScrollText as f, MonitorPlay as g, MonitorSmartphone as h, Tv as i, Activity as j, Check as k, Settings as l, Plus as m, Users as n, Tag as o, RefreshCw as p, UserCog as r, ShoppingCart as s, X as t, Server as u, LogOut as v, Copy as w, House as x, ListVideo as y };
