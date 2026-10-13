@@ -93,7 +93,7 @@ function renderErrorPage() {
 }
 var serverEntryPromise;
 async function getServerEntry() {
-	if (!serverEntryPromise) serverEntryPromise = import("./server-BrRQ6rdd.mjs").then((m) => m.default ?? m);
+	if (!serverEntryPromise) serverEntryPromise = import("./server-OutGdPfu.mjs").then((m) => m.default ?? m);
 	return serverEntryPromise;
 }
 async function normalizeCatastrophicSsrResponse(response) {
@@ -136,8 +136,65 @@ function withSecurityHeaders(response, request) {
 		return response;
 	}
 }
+async function streamProxy(request) {
+	const u = new URL(request.url);
+	if (u.pathname !== "/api/stream-proxy") return null;
+	const raw = u.searchParams.get("url") ?? "";
+	let target;
+	try {
+		target = new URL(raw);
+	} catch {
+		return new Response("URL inválida", { status: 400 });
+	}
+	if (target.protocol !== "http:" && target.protocol !== "https:") return new Response("Protocolo inválido", { status: 400 });
+	const host = target.hostname.toLowerCase();
+	if (host === "localhost" || host === "0.0.0.0" || host === "::1" || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)) return new Response("Host não permitido", { status: 403 });
+	const upstream = await fetch(target, {
+		headers: { ...request.headers.get("range") ? { range: request.headers.get("range") } : {} },
+		redirect: "follow",
+		signal: AbortSignal.timeout(15e3)
+	}).catch(() => null);
+	if (!upstream) return new Response("Servidor indisponível", { status: 502 });
+	const ct = upstream.headers.get("content-type") ?? "";
+	if ((/mpegurl/i.test(ct) || /\.m3u8(?:[?#]|$)/i.test(target.href)) && upstream.ok) {
+		let body = await upstream.text();
+		body = body.split(/\r?\n/).map((line) => {
+			const s = line.trim();
+			if (!s || s.startsWith("#")) return line;
+			try {
+				return "/api/stream-proxy?url=" + encodeURIComponent(new URL(s, target).href);
+			} catch {
+				return line;
+			}
+		}).join("\n");
+		return new Response(body, {
+			status: upstream.status,
+			headers: {
+				"content-type": "application/vnd.apple.mpegurl",
+				"cache-control": "no-store"
+			}
+		});
+	}
+	const headers = new Headers();
+	for (const h of [
+		"content-type",
+		"content-length",
+		"content-range",
+		"accept-ranges"
+	]) {
+		const v = upstream.headers.get(h);
+		if (v) headers.set(h, v);
+	}
+	headers.set("cache-control", "no-store");
+	return new Response(upstream.body, {
+		status: upstream.status,
+		headers
+	});
+}
 var server_default = { async fetch(request, env = {}, ctx = {}) {
 	try {
+		const proxied = await streamProxy(request);
+		if (proxied) return withSecurityHeaders(proxied, request);
 		return withSecurityHeaders(await normalizeCatastrophicSsrResponse(await (await getServerEntry()).fetch(request, env, ctx)), request);
 	} catch (error) {
 		console.error(error);
