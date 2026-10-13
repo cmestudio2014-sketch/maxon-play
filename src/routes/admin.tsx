@@ -15,6 +15,7 @@ import {
   UserCog,
   Settings,
   ScrollText,
+  Clapperboard,
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ const nav = [
   { to: "/admin/clientes", label: "Clientes", icon: Users },
   { to: "/admin/dispositivos", label: "Dispositivos", icon: MonitorSmartphone },
   { to: "/admin/ativacoes", label: "Ativações", icon: KeyRound },
+  { to: "/admin/streaming", label: "Ativação Streaming", icon: Clapperboard },
   { to: "/admin/servidores", label: "Servidores", icon: Server },
   { to: "/admin/fontes", label: "Fontes / Listas", icon: ListVideo },
   { to: "/admin/editor-listas", label: "Editor de Listas", icon: Layers3 },
