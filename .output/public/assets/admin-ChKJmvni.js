@@ -1,1 +1,0 @@
-import{o as e}from"./admin-ui-y8HkEqeF.js";import{vt as t}from"./index-CT_IHxcJ.js";var n=t(),r=({error:t})=>(0,n.jsx)(`div`,{className:`p-10 text-center text-destructive`,children:e(t)});export{r as errorComponent};
