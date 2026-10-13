@@ -277,7 +277,8 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     setError("");
     const originalUrl = item.url.trim();
     const xtreamTs = /\/live\/[^/]+\/[^/]+\/\d+\.ts(?:[?#]|$)/i.test(originalUrl);
-    const url = xtreamTs ? originalUrl.replace(/\.ts(?=[?#]|$)/i, ".m3u8") : originalUrl;
+    const directUrl = xtreamTs ? originalUrl.replace(/\.ts(?=[?#]|$)/i, ".m3u8") : originalUrl;
+    const url = `/api/stream-proxy?url=${encodeURIComponent(directUrl)}`;
     const onError = () => setError(xtreamTs
       ? "HLS não disponível neste servidor. TS direto pode ser incompatível com o navegador; solicite uma URL HLS ao fornecedor."
       : "Não foi possível reproduzir este stream. Verifique o formato, a autorização e a disponibilidade do servidor.");
@@ -286,12 +287,10 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     };
     window.addEventListener("keydown", esc);
     v.addEventListener("error", onError);
-    if (window.location.protocol === "https:" && url.startsWith("http:")) {
-      setError("Este stream usa HTTP e o site usa HTTPS. O navegador bloqueia conteúdo misto. Solicite ao fornecedor uma URL HTTPS/HLS.");
-    } else if (!/^https?:\/\//i.test(url)) {
+    if (!/^https?:\/\//i.test(directUrl)) {
       setError("URL de vídeo inválida.");
     } else {
-      const isHls = /\.m3u8(?:[?#]|$)/i.test(url) || /[?&](?:output|type)=hls(?:&|$)/i.test(url);
+      const isHls = /\.m3u8(?:[?#]|$)/i.test(directUrl) || /[?&](?:output|type)=hls(?:&|$)/i.test(directUrl);
       if (isHls) {
         void import("hls.js").then(({ default: Hls }) => {
           if (disposed) return;
