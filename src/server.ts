@@ -138,6 +138,33 @@ async function streamProxy(request: Request): Promise<Response | null> {
   return new Response(upstream.body, { status: upstream.status, statusText: upstream.statusText, headers: out });
 }
 
+async function streamProbe(request: Request): Promise<Response | null> {
+  const req = new URL(request.url);
+  if (req.pathname !== "/api/stream-probe") return null;
+  const raw = req.searchParams.get("url") ?? "";
+  let target: URL;
+  try { target = new URL(raw); } catch { return Response.json({ ok: false, error: "URL inválida" }, { status: 400 }); }
+  if (!["http:", "https:"].includes(target.protocol)) return Response.json({ ok: false, error: "Protocolo inválido" }, { status: 400 });
+  const host = target.hostname.toLowerCase();
+  if (host === "localhost" || host === "0.0.0.0" || host === "::1" || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host))
+    return Response.json({ ok: false, error: "Host não permitido" }, { status: 403 });
+  try {
+    const upstream = await fetch(target, {
+      headers: { range: "bytes=0-65535", accept: "*/*", "user-agent": request.headers.get("user-agent") ?? "Mozilla/5.0 MAXON-PLAY" },
+      redirect: "follow", signal: AbortSignal.timeout(15000),
+    });
+    const ct = upstream.headers.get("content-type") ?? "";
+    const buf = upstream.ok ? new Uint8Array(await upstream.arrayBuffer()) : new Uint8Array();
+    const head = new TextDecoder().decode(buf.slice(0, 256));
+    const hls = /mpegurl/i.test(ct) || head.includes("#EXTM3U") || /\.m3u8(?:[?#]|$)/i.test(upstream.url);
+    const ts = /mp2t|mpeg-ts/i.test(ct) || (buf.length > 188 && buf[0] === 0x47 && buf[188] === 0x47);
+    const mp4 = /video\/mp4/i.test(ct) || (buf.length > 12 && String.fromCharCode(...buf.slice(4, 8)) === "ftyp");
+    return Response.json({ ok: upstream.ok, status: upstream.status, contentType: ct || "desconhecido", format: hls ? "hls" : ts ? "mpegts" : mp4 ? "mp4" : "unknown" }, { headers: { "cache-control": "no-store" } });
+  } catch {
+    return Response.json({ ok: false, status: 502, contentType: "desconhecido", format: "unknown" }, { status: 200, headers: { "cache-control": "no-store" } });
+  }
+}
+
 export default {
   async fetch(
     request: Request,
@@ -145,6 +172,8 @@ export default {
     ctx: unknown = {}
   ) {
     try {
+      const probed = await streamProbe(request);
+      if (probed) return withSecurityHeaders(probed, request);
       const proxied = await streamProxy(request);
       if (proxied) return withSecurityHeaders(proxied, request);
       const handler = await getServerEntry();
