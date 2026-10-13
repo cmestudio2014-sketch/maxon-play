@@ -1302,6 +1302,7 @@ export const uploadM3uSource = createServerFn({ method: "POST" })
     );
     if (!source) throw new Error("Não foi possível criar a fonte.");
     let pending:{name:string;category:string}|null=null, count=0;
+    const parsed:{key:string;kind:"live"|"movie"|"series";name:string;category:string;enc:string}[]=[];
     const seriesRx=/\b(series?|séries?|temporadas?|novelas?|animes?)\b|\bs\d{1,2}\b|\btemporada\b/i;
     const movieRx=/\b(filmes?|movies?|cinema|vod)\b/i;
     for (const line0 of lines) {
@@ -1316,12 +1317,22 @@ export const uploadM3uSource = createServerFn({ method: "POST" })
       const probe=(pending.name+" "+pending.category).toLowerCase();
       const kind:"live"|"movie"|"series"=seriesRx.test(probe)?"series":movieRx.test(probe)?"movie":"live";
       const key=createHash("sha256").update(line).digest("hex").slice(0,32);
+      parsed.push({key,kind,name:pending.name,category:pending.category,enc:encryptSecret(line)});
+      pending=null;
+      if(parsed.length>=30000) break;
+    }
+    for(let offset=0;offset<parsed.length;offset+=200){
+      const batch=parsed.slice(offset,offset+200);
+      const params:unknown[]=[];
+      const values=batch.map((x,i)=>{
+        const n=i*6;
+        params.push(source.id,x.key,x.kind,x.name,x.category,x.enc);
+        return `($${n+1},$${n+2},$${n+3},$${n+4},$${n+5},$${n+6})`;
+      }).join(",");
       await q(`INSERT INTO source_catalog_items(source_id,external_key,kind,name,category,stream_ref_enc)
-        VALUES($1,$2,$3,$4,$5,$6)
-        ON CONFLICT(source_id,external_key) DO UPDATE SET kind=EXCLUDED.kind,name=EXCLUDED.name,category=EXCLUDED.category,stream_ref_enc=EXCLUDED.stream_ref_enc,imported_at=now()`,
-        [source.id,key,kind,pending.name,pending.category,encryptSecret(line)]);
-      count++; pending=null;
-      if(count>=30000) break;
+        VALUES ${values}
+        ON CONFLICT(source_id,external_key) DO UPDATE SET kind=EXCLUDED.kind,name=EXCLUDED.name,category=EXCLUDED.category,stream_ref_enc=EXCLUDED.stream_ref_enc,imported_at=now()`,params);
+      count+=batch.length;
     }
     if (!count) { await q("DELETE FROM sources WHERE id=$1",[source.id]); throw new Error("Nenhum stream HTTP/HTTPS válido foi encontrado no arquivo."); }
     await audit({...actor(u),action:"source.upload_m3u",entity:"source",entityId:source.id,details:{filename:data.filename,items:count}});
