@@ -1296,11 +1296,21 @@ export const uploadM3uSource = createServerFn({ method: "POST" })
     const { encryptPayload, encryptSecret } = await import("./server/sources.server");
     const localRef = `upload://${createHash("sha256").update(raw).digest("hex").slice(0,24)}/${data.filename.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
     const enc = encryptPayload({ type:"m3u", m3u_url: localRef });
-    const source = await q1<{id:string}>(
-      "INSERT INTO sources(name,type,customer_id,payload_enc,display_hint) VALUES ($1,'m3u',$2,$3,$4) RETURNING id",
-      [data.name,data.customer_id,enc,`M3U enviado · ${data.filename.slice(0,80)}`]
+    let source = await q1<{id:string}>(
+      "SELECT id FROM sources WHERE name=$1 AND type='m3u' AND customer_id IS NOT DISTINCT FROM $2 AND display_hint LIKE 'M3U enviado · %' ORDER BY updated_at DESC LIMIT 1",
+      [data.name,data.customer_id]
     );
-    if (!source) throw new Error("Não foi possível criar a fonte.");
+    if (source) {
+      await q("UPDATE sources SET payload_enc=$2,display_hint=$3,updated_at=now(),version=version+1 WHERE id=$1",
+        [source.id,enc,`M3U enviado · ${data.filename.slice(0,80)}`]);
+      await q("DELETE FROM source_catalog_items WHERE source_id=$1",[source.id]);
+    } else {
+      source = await q1<{id:string}>(
+        "INSERT INTO sources(name,type,customer_id,payload_enc,display_hint) VALUES ($1,'m3u',$2,$3,$4) RETURNING id",
+        [data.name,data.customer_id,enc,`M3U enviado · ${data.filename.slice(0,80)}`]
+      );
+    }
+    if (!source) throw new Error("Não foi possível criar ou atualizar a fonte.");
     let pending:{name:string;category:string}|null=null, count=0;
     const parsed:{key:string;kind:"live"|"movie"|"series";name:string;category:string;enc:string}[]=[];
     const seriesRx=/\b(series?|séries?|temporadas?|novelas?|animes?)\b|\bs\d{1,2}\b|\btemporada\b/i;
