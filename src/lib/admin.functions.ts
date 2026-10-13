@@ -1039,6 +1039,77 @@ export const deleteProviderServer = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------------- Editor de listas ----------------
+export type Playlist = {
+  id: string;
+  name: string;
+  description: string;
+  active: boolean;
+  updated_at: string;
+  sources: number;
+  source_names: string;
+};
+export const listPlaylists = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
+  return q<Playlist>(
+    `SELECT p.id,p.name,p.description,p.active,p.updated_at::text AS updated_at,
+       count(ps.source_id)::int AS sources,
+       coalesce(string_agg(s.name, ', ' ORDER BY ps.priority) FILTER (WHERE ps.active), '') AS source_names
+     FROM playlists p
+     LEFT JOIN playlist_sources ps ON ps.playlist_id=p.id
+     LEFT JOIN sources s ON s.id=ps.source_id
+     GROUP BY p.id ORDER BY p.updated_at DESC`,
+  );
+});
+export const getPlaylistEditor = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const playlist = await q1<{id:string;name:string;description:string;active:boolean}>(
+      "SELECT id,name,description,active FROM playlists WHERE id=$1", [data.id]
+    );
+    if (!playlist) throw new Error("Lista não encontrada.");
+    const selected = await q<{source_id:string;priority:number;active:boolean}>(
+      "SELECT source_id,priority,active FROM playlist_sources WHERE playlist_id=$1 ORDER BY priority", [data.id]
+    );
+    return { playlist, selected };
+  });
+export const savePlaylist = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    id: uuid.optional(),
+    name: z.string().trim().min(2).max(80),
+    description: z.string().trim().max(300).default(""),
+    active: z.boolean().default(true),
+    source_ids: z.array(uuid).max(50).default([]),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin(["admin"]);
+    let id=data.id;
+    if (id) {
+      await q("UPDATE playlists SET name=$2,description=$3,active=$4,updated_at=now() WHERE id=$1",
+        [id,data.name,data.description,data.active]);
+    } else {
+      id=(await q1<{id:string}>("INSERT INTO playlists(name,description,active) VALUES ($1,$2,$3) RETURNING id",
+        [data.name,data.description,data.active]))!.id;
+    }
+    await q("DELETE FROM playlist_sources WHERE playlist_id=$1",[id]);
+    for (let i=0;i<data.source_ids.length;i++) {
+      await q("INSERT INTO playlist_sources(playlist_id,source_id,priority,active) VALUES ($1,$2,$3,true)",
+        [id,data.source_ids[i],i+1]);
+    }
+    await audit({ ...actor(u), action: data.id ? "playlist.update" : "playlist.create", entity: "playlist", entityId:id,
+      details:{name:data.name,sources:data.source_ids.length} });
+    return {id};
+  });
+export const deletePlaylist = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({id:uuid}).parse(d))
+  .handler(async ({data}) => {
+    const u=await requireAdmin(["admin"]);
+    await q("DELETE FROM playlists WHERE id=$1",[data.id]);
+    await audit({...actor(u),action:"playlist.delete",entity:"playlist",entityId:data.id});
+    return {ok:true};
+  });
+
 // ---------------- Fontes / Listas autorizadas ----------------
 export type Source = {
   id: string;
