@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,7 @@ import {
   useAdminQuery,
 } from "@/components/admin-ui";
 import { fmtDate } from "@/components/brand";
-import { listCustomers, saveCustomer, generateMissingCustomerCredentials, type Customer } from "@/lib/admin.functions";
+import { deleteCustomer, listCustomers, saveCustomer, generateMissingCustomerCredentials, type Customer } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin/clientes")({ component: Clientes });
 
@@ -34,6 +34,7 @@ const empty: Form = { name: "", whatsapp: "", email: "", notes: "", status: "ati
 function Clientes() {
   const list = useServerFn(listCustomers);
   const save = useServerFn(saveCustomer);
+  const remove = useServerFn(deleteCustomer);
   const generateCredentials = useServerFn(generateMissingCustomerCredentials);
   const act = useAction();
   const { data = [] } = useAdminQuery("customers", () => list());
@@ -55,6 +56,12 @@ function Clientes() {
     e.preventDefault();
     if (!form) return;
     const r = await act(save({ data: form }), "Cliente salvo.", ["customers"]);
+    if (r) setForm(null);
+  };
+  const removeCurrent = async () => {
+    if (!form?.id) return;
+    if (!window.confirm(`Excluir o cliente "${form.name}"? Esta ação não pode ser desfeita.`)) return;
+    const r = await act(remove({ data: { id: form.id } }), "Cliente excluído.", ["customers"]);
     if (r) setForm(null);
   };
   return (
@@ -138,7 +145,7 @@ function Clientes() {
         ))}
       </DataTable>
       <Dialog open={!!form} onOpenChange={(o) => !o && setForm(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form?.id ? "Editar cliente" : "Novo cliente"}</DialogTitle>
           </DialogHeader>
@@ -184,9 +191,21 @@ function Clientes() {
                   <option value="bloqueado">Bloqueado</option>
                 </select>
               </Field>
-              <Button type="submit" variant="hero" className="w-full">
-                Salvar
-              </Button>
+              <div className="grid gap-2 pt-1">
+                <Button type="submit" variant="hero" className="w-full">
+                  Salvar
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className={form.id ? "w-full" : "hidden"}
+                  onClick={removeCurrent}
+                  disabled={!form.id}
+                >
+                  <Trash2 />
+                  Excluir cliente
+                </Button>
+              </div>
             </form>
           )}
         </DialogContent>
