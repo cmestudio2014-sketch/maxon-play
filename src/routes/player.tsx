@@ -315,7 +315,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
       if (!candidates.length) { setError("URL de vídeo inválida."); return; }
       const detected = item.kind === "live" ? await probe(candidates[0]) : null;
       if (disposed) return;
-      if (detected && !detected.ok) { const reason = detected.detail === "timeout" ? "tempo limite ao conectar na origem" : detected.detail === "dns" ? "servidor de origem não localizado (DNS)" : detected.detail === "connection-refused" ? "servidor de origem recusou a conexão" : detected.detail === "connection-failed" ? "conexão com a origem caiu ou falhou" : "falha ao acessar o servidor de origem"; setError("Live indisponível: HTTP " + detected.status + " — " + reason + "."); return; }
+      if (detected && !detected.ok) { setError("Proxy do servidor indisponível; tentando conexão direta com o canal…"); }
       const { default: Hls } = await import("hls.js");
       const hlsCandidate = detected?.format === "hls" ? candidates[0] : candidates.find(u => /\.m3u8(?:[?#]|$)/i.test(u) || /[?&](?:output|type)=hls(?:&|$)/i.test(u));
 
@@ -372,14 +372,14 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
           }
         });
         h.attachMedia(v);
-        h.loadSource(proxy(hlsCandidate));
+        h.loadSource(detected?.ok ? proxy(hlsCandidate) : hlsCandidate);
         return;
       }
 
       if (detected?.format === "mpegts") {
         const { default: mpegts } = await import("mpegts.js");
         if (!mpegts.isSupported()) { setError("MPEG-TS detectado, mas Media Source não é suportado."); return; }
-        const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: proxy(candidates[0]) }, { enableWorker: false });
+        const player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: detected?.ok ? proxy(candidates[0]) : candidates[0] }, { enableWorker: false });
         tsPlayer = player;
         player.on(mpegts.Events.ERROR, (type: string, detail: string, info?: { code?: number; msg?: string }) => {
           if (disposed) return;
