@@ -1,6 +1,6 @@
 import { o as __toESM } from "../_runtime.mjs";
-import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
+import { v as require_jsx_runtime } from "../_libs/@radix-ui/react-accordion+[...].mjs";
 import { t as cn } from "./utils-C_uf36nf.mjs";
 import { n as SwitchThumb, t as Switch$1 } from "../_libs/radix-ui__react-switch.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/switch-Cn1w-cIH.js

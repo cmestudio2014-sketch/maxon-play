@@ -1,0 +1,1 @@
+import{mt as e}from"./index-C8VvfwZc.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`p-10 text-center`,children:`Página não encontrada.`});export{n as notFoundComponent};
