@@ -11,7 +11,7 @@ process.env.NITRO_PORT ??= process.env.PORT;
 
 const nested = resolve(".output/.output/server/index.mjs");
 const normal = resolve(".output/server/index.mjs");
-const entry = existsSync(nested) ? nested : normal;
+const entry = existsSync(normal) ? normal : nested;
 
 if (!existsSync(entry)) {
   console.error("[maxon] Build não encontrado:", entry);
