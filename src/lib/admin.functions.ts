@@ -336,7 +336,7 @@ export const activateDeviceByDisplayId = createServerFn({ method: "POST" })
       device = await q1<{ id: string }>(
         `INSERT INTO devices(device_uid,display_id,platform,model,app_version,status,last_seen_at)
          VALUES ($1,$2,'android','Aguardando aparelho','—','ativo',NULL) RETURNING id`,
-        [\`manual:\${displayId}\`, displayId],
+        [`manual:${displayId}`, displayId],
       );
     }
     const plan = await q1<{ duration_days: number }>(
