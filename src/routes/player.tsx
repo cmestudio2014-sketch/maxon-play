@@ -326,8 +326,21 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
                 url: proxy(ts),
               }, { enableWorker: false, lazyLoad: item.kind !== "live" });
               tsPlayer = player;
-              player.on(mpegts.Events.ERROR, (type: string, detail: string) => {
-                if (!disposed) setError("Erro TS: " + type + " / " + detail);
+              player.on(mpegts.Events.ERROR, (type: string, detail: string, info?: { code?: number; msg?: string }) => {
+                if (disposed) return;
+                const status = typeof info?.code === "number" ? info.code : null;
+                if (detail === "HttpStatusCodeInvalid") {
+                  setError(status
+                    ? "Falha HTTP " + status + " ao carregar TS. " + (
+                      status === 401 || status === 403 ? "Acesso recusado pelo servidor de vídeo." :
+                      status === 404 ? "Stream não encontrado no servidor." :
+                      status === 502 || status === 504 ? "Servidor de origem indisponível ou sem resposta." :
+                      "O servidor não entregou um vídeo válido."
+                    )
+                    : "Servidor recusou o TS (HTTP inválido). Consulte o diagnóstico de rede.");
+                } else {
+                  setError("Falha de reprodução: " + type + " / " + detail);
+                }
               });
               player.attachMediaElement(v);
               player.load();
