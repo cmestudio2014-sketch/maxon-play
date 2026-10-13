@@ -28,6 +28,7 @@ import { fmtDate } from "@/components/brand";
 import { SourceForm } from "@/components/source-form";
 import {
   assignSource,
+  activateDeviceByTvCode,
   changeActivationDevice,
   createActivation,
   forceSync,
@@ -56,6 +57,7 @@ function Ativacoes() {
     regen: useServerFn(regenerateKey),
     assign: useServerFn(assignSource),
     sync: useServerFn(forceSync),
+    tvCode: useServerFn(activateDeviceByTvCode),
   };
   const act = useAction();
   const { data = [] } = useAdminQuery("activations", () => fns.list());
@@ -63,6 +65,7 @@ function Ativacoes() {
   const { data: plans = [] } = useAdminQuery("plans", () => fns.plans());
   const { data: sources = [] } = useAdminQuery("sources", () => fns.sources());
   const [creating, setCreating] = useState(false);
+  const [tvCodeOpen, setTvCodeOpen] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [changing, setChanging] = useState<Activation | null>(null);
   const [assigning, setAssigning] = useState<Activation | null>(null);
@@ -75,10 +78,10 @@ function Ativacoes() {
         title="Ativações"
         desc="Cada KEY ativa 1 dispositivo. A KEY completa aparece apenas uma vez, ao ser gerada."
         action={
-          <Button variant="hero" onClick={() => setCreating(true)}>
-            <Plus />
-            Gerar KEY
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="hero" onClick={() => setTvCodeOpen(true)}>ATIVAR CÓDIGO DA TV</Button>
+            <Button variant="secondary" onClick={() => setCreating(true)}><Plus /> Gerar KEY</Button>
+          </div>
         }
       />
       <div className="mb-4 flex gap-2">
@@ -198,6 +201,18 @@ function Ativacoes() {
         ))}
       </DataTable>
 
+      <TvCodeDialog
+        open={tvCodeOpen}
+        customers={customers}
+        plans={plans.filter((p) => p.active)}
+        sources={sources}
+        onClose={() => setTvCodeOpen(false)}
+        onActivate={async (d: any) => {
+          const r = await act(fns.tvCode({ data: d }), "Código da TV ativado com sucesso.", ["activations", "devices"]);
+          if (r) setTvCodeOpen(false);
+        }}
+      />
+
       <CreateDialog
         open={creating}
         onClose={() => setCreating(false)}
@@ -307,6 +322,41 @@ type CreateInput = {
   start_now: boolean;
   source_id: string | null;
 };
+function TvCodeDialog({ open, customers, plans, sources, onClose, onActivate }: any) {
+  const [code, setCode] = useState("");
+  const [customerId, setCustomerId] = useState("");
+  const [planId, setPlanId] = useState("");
+  const [sourceId, setSourceId] = useState("");
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Ativar pelo código mostrado na TV</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">Digite os 6 números exibidos no MAXON PLAY. O código expira em 10 minutos e só pode ser usado uma vez.</p>
+          <Field label="Código da TV">
+            <Input autoFocus inputMode="numeric" maxLength={6} placeholder="123456" value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="text-center font-mono text-2xl tracking-[0.35em]" />
+          </Field>
+          <Field label="Cliente"><select className={selectCls} value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+            <option value="">Sem cliente</option>{customers.filter((x:any) => x.status === "ativo").map((x:any) => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </select></Field>
+          <Field label="Plano"><select className={selectCls} value={planId} onChange={(e) => setPlanId(e.target.value)}>
+            <option value="">Selecione o plano</option>{plans.map((p:any) => <option key={p.id} value={p.id}>{p.name} — {p.duration_days} dias</option>)}
+          </select></Field>
+          <Field label="Fonte / Lista"><select className={selectCls} value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
+            <option value="">Nenhuma / padrão</option>{sources.map((x:any) => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </select></Field>
+          <Button variant="hero" className="w-full" disabled={code.length !== 6 || !planId}
+            onClick={() => onActivate({ code, customer_id: customerId || null, plan_id: planId, source_id: sourceId || null })}>
+            ATIVAR TV
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CreateDialog({
   open,
   onClose,
