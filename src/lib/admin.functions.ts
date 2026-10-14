@@ -304,7 +304,9 @@ export const activateDeviceByTvCode = createServerFn({ method: "POST" })
     const plan = await q1<{ duration_days:number }>("SELECT duration_days FROM plans WHERE id=$1 AND active", [data.plan_id]);
     if (!plan) throw new Error("Plano não encontrado ou inativo.");
     const existing = await q1<{ id:string }>("SELECT id FROM activations WHERE device_id=$1 AND status='ativa' AND expires_at > now() ORDER BY expires_at DESC LIMIT 1", [pair.device_id]);
-    if (existing) throw new Error("Este aparelho já possui uma ativação ativa.");
+    if (existing) {
+      await q("UPDATE activations SET status='revogada' WHERE device_id=$1 AND status='ativa'", [pair.device_id]);
+    }
     const key = generateActivationKey();
     const activation = await q1<{ id:string }>(
       `INSERT INTO activations(customer_id,plan_id,device_id,key_hash,key_last4,status,starts_at,expires_at,created_by,source_id)
