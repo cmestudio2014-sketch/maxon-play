@@ -963,3 +963,68 @@ export const forceSync = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+// ---------------- Catálogo de conteúdos ----------------
+export type CatalogContent = {
+  id: string;
+  title: string;
+  category: "ao_vivo" | "futebol" | "infantil" | "filmes" | "series";
+  content_url: string;
+  logo_url: string;
+  description: string;
+  enabled: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+const CatalogContentInput = z.object({
+  id: uuid.optional(),
+  title: z.string().trim().min(1).max(120),
+  category: z.enum(["ao_vivo", "futebol", "infantil", "filmes", "series"]),
+  content_url: z.string().trim().url().max(1000).refine((value) => /^https?:\/\//i.test(value), "Use uma URL HTTP ou HTTPS."),
+  logo_url: z.string().trim().max(500).optional().default("").refine((value) => !value || /^https?:\/\//i.test(value), "O logo deve usar HTTP ou HTTPS."),
+  description: z.string().trim().max(500).optional().default(""),
+  enabled: z.boolean().default(true),
+  sort_order: z.number().int().min(0).max(99999).default(0),
+});
+export const listCatalogContent = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
+  return q<CatalogContent>(
+    "SELECT id, title, category, content_url, logo_url, description, enabled, sort_order, created_at::text AS created_at, updated_at::text AS updated_at FROM catalog_contents ORDER BY sort_order, title",
+  );
+});
+export const saveCatalogContent = createServerFn({ method: "POST" })
+  .inputValidator((d) => CatalogContentInput.parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin();
+    let id = data.id;
+    if (id) {
+      const result = await q(
+        "UPDATE catalog_contents SET title=$2, category=$3, content_url=$4, logo_url=$5, description=$6, enabled=$7, sort_order=$8, updated_at=now() WHERE id=$1 RETURNING id",
+        [id, data.title, data.category, data.content_url, data.logo_url, data.description, data.enabled, data.sort_order],
+      );
+      if (!result.length) throw new Error("Conteúdo não encontrado.");
+    } else {
+      const result = await q1<{ id: string }>(
+        "INSERT INTO catalog_contents(title, category, content_url, logo_url, description, enabled, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id",
+        [data.title, data.category, data.content_url, data.logo_url, data.description, data.enabled, data.sort_order],
+      );
+      id = result!.id;
+    }
+    await audit({
+      ...actor(u),
+      action: data.id ? "content.update" : "content.create",
+      entity: "catalog_content",
+      entityId: id,
+      details: { title: data.title, category: data.category, enabled: data.enabled },
+    });
+    return { id };
+  });
+export const deleteCatalogContent = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin();
+    const result = await q("DELETE FROM catalog_contents WHERE id=$1 RETURNING id", [data.id]);
+    if (!result.length) throw new Error("Conteúdo não encontrado.");
+    await audit({ ...actor(u), action: "content.delete", entity: "catalog_content", entityId: data.id });
+    return { ok: true };
+  });
