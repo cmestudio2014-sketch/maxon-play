@@ -335,7 +335,7 @@ function TvCodeDialog({ open, customers, plans, sources, onClose, onActivate }: 
           <p className="text-sm text-muted-foreground">Digite o código numérico exibido no MAXON PLAY (até 8 números). O código expira em 10 minutos e só pode ser usado uma vez.</p>
           <Field label="Código da TV">
             <Input autoFocus inputMode="numeric" maxLength={8} placeholder="12345678" value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
               className="text-center font-mono text-2xl tracking-[0.35em]" />
           </Field>
           <Field label="Cliente"><select className={selectCls} value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
