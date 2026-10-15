@@ -1,4 +1,4 @@
-// Fluxo: register → (ativação) → config sincronizada por config_version → home. Navegação por teclas do controle.
+// Fluxo: register → ativação → sincronização de fonte e catálogo → home. Navegação por teclas do controle.
 (function () {
   var $ = function (id) {
     return document.getElementById(id);
@@ -7,10 +7,11 @@
     version: localStorage.getItem("maxon.config_version") || "",
     managed: null,
     items: [],
-    tab: "live",
+    catalog: [],
+    catalogLoaded: false,
+    tab: "ao_vivo",
     favs: JSON.parse(localStorage.getItem("maxon.favs") || "[]"),
   };
-  // Fonte gerenciada fica só em memória/localStorage do app (pacote .wgt com encryption="enable").
   try {
     state.managed = JSON.parse(localStorage.getItem("maxon.managed") || "null");
   } catch (e) {
@@ -32,12 +33,13 @@
       showActivation(st);
       return Promise.resolve();
     }
-    if (st.config_version === state.version) return Promise.resolve();
-    var p = st.config_version === "none" ? Promise.resolve({ source: null }) : MaxonApi.config();
-    return p.then(function (cfg) {
-      state.managed = cfg.source;
-      state.version = st.config_version;
-      if (cfg.source) localStorage.setItem("maxon.managed", JSON.stringify(cfg.source));
+    if (st.config_version === state.version && state.catalogLoaded) return Promise.resolve();
+    return MaxonApi.config().then(function (cfg) {
+      state.managed = cfg.source || null;
+      state.catalog = Array.isArray(cfg.catalog) ? cfg.catalog : [];
+      state.catalogLoaded = true;
+      state.version = cfg.config_version || st.config_version;
+      if (state.managed) localStorage.setItem("maxon.managed", JSON.stringify(state.managed));
       else localStorage.removeItem("maxon.managed");
       localStorage.setItem("maxon.config_version", state.version);
       return loadHome();
@@ -48,8 +50,9 @@
     $("deviceId").textContent = st.device_id;
     $("actStatus").textContent =
       st.status === "nao_ativado" ? "Digite a KEY recebida após a compra." : "Status: " + st.status;
-    // Licença inativa: revoga a fonte gerenciada local.
     state.managed = null;
+    state.catalog = [];
+    state.catalogLoaded = false;
     localStorage.removeItem("maxon.managed");
     state.version = "none";
     localStorage.setItem("maxon.config_version", "none");
@@ -59,19 +62,20 @@
   function loadHome() {
     show("home");
     var src = source();
-    $("info").textContent = src
-      ? state.managed
-        ? "Lista enviada pelo provedor (atualiza automaticamente)."
-        : "Lista adicionada manualmente."
-      : "Nenhuma lista configurada.";
+    $("info").textContent = state.catalog.length
+      ? "Catálogo MAXON PLAY sincronizado. Os conteúdos são atualizados pelo painel."
+      : src
+        ? state.managed
+          ? "Lista enviada pelo provedor (atualiza automaticamente)."
+          : "Lista adicionada manualmente."
+        : "Nenhuma lista ou conteúdo configurado.";
     $("manual").classList.toggle("hidden", !!state.managed);
-    if (!src) {
-      selectTab("settings");
-      return Promise.resolve();
-    }
-    return MaxonPlaylist.load(src).then(function (items) {
-      state.items = items;
-      selectTab(state.tab === "settings" ? "live" : state.tab);
+    var playlistPromise = src ? MaxonPlaylist.load(src) : Promise.resolve([]);
+    return playlistPromise.then(function (items) {
+      state.items = (items || []).concat(state.catalog || []);
+      var firstTab = state.catalog.length ? "ao_vivo" : "settings";
+      selectTab(state.tab === "settings" && (state.catalog.length || items.length) ? firstTab : state.tab);
+      if (!state.items.length && !src) selectTab("settings");
     });
   }
 
@@ -88,7 +92,13 @@
     var list = state.items
       .filter(function (i) {
         if (state.tab === "fav") return state.favs.indexOf(i.id) >= 0;
-        if (state.tab === "search") return q.length > 1 && i.name.toLowerCase().indexOf(q) >= 0;
+        if (state.tab === "search") return q.length > 1 && (i.name || "").toLowerCase().indexOf(q) >= 0;
+        if (state.tab === "ao_vivo") return i.category === "ao_vivo" || i.kind === "live";
+        if (state.tab === "futebol") return i.category === "futebol";
+        if (state.tab === "infantil") return i.category === "infantil";
+        if (state.tab === "filmes") return i.category === "filmes" || i.kind === "movie";
+        if (state.tab === "series") return i.category === "series" || i.kind === "series";
+        if (state.tab === "adulto") return i.category === "adulto";
         return i.kind === state.tab;
       })
       .slice(0, 60);
@@ -97,7 +107,7 @@
       var b = document.createElement("button");
       b.className = "focusable card";
       b.innerHTML = (i.logo ? '<img src="' + encodeURI(i.logo) + '">' : "") + "<span></span>";
-      b.querySelector("span").textContent = i.name;
+      b.querySelector("span").textContent = i.name || "Sem título";
       b.onclick = function () {
         MaxonPlayer.play(i);
       };
@@ -106,7 +116,7 @@
     });
   }
 
-  // ---- Navegação por controle remoto (setas, OK, Voltar, teclas coloridas) ----
+  // Navegação por controle remoto (setas, OK, Voltar, teclas coloridas.
   function focusables() {
     return Array.prototype.filter.call(document.querySelectorAll(".focusable"), function (el) {
       return el.offsetParent !== null;
@@ -149,24 +159,15 @@
   }
   document.addEventListener("keydown", function (e) {
     switch (e.keyCode) {
-      case 37:
-        move(-1, 0);
-        break;
-      case 39:
-        move(1, 0);
-        break;
-      case 38:
-        move(0, -1);
-        break;
-      case 40:
-        move(0, 1);
-        break;
+      case 37: move(-1, 0); break;
+      case 39: move(1, 0); break;
+      case 38: move(0, -1); break;
+      case 40: move(0, 1); break;
       case 13:
         if (document.activeElement && document.activeElement.tagName === "BUTTON")
           document.activeElement.click();
         break;
       case 403: {
-        // vermelho: favoritar
         var id = document.activeElement && document.activeElement.dataset.id;
         if (id) {
           var i = state.favs.indexOf(id);
@@ -178,27 +179,19 @@
       }
       case 10009:
       case 8:
-      case 27: // Voltar
+      case 27:
         if (MaxonPlayer.isOpen()) {
           MaxonPlayer.stop();
           e.preventDefault();
         } else if (e.keyCode === 10009) {
-          try {
-            tizen.application.getCurrentApplication().exit();
-          } catch (x) {
-            /* noop */
-          }
+          try { tizen.application.getCurrentApplication().exit(); } catch (x) { /* noop */ }
         }
         break;
     }
   });
 
-  // ---- Eventos ----
   $("keyInput").addEventListener("input", function () {
-    var c = this.value
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "")
-      .slice(0, 16);
+    var c = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16);
     this.value = c.replace(/(.{4})(?=.)/g, "$1-");
   });
   $("activateBtn").onclick = function () {
@@ -208,29 +201,22 @@
       .then(function () {
         if (!state.items.length) return loadHome();
       })
-      .catch(function (e) {
-        $("actError").textContent = e.message;
-      });
+      .catch(function (e) { $("actError").textContent = e.message; });
   };
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
-    t.onclick = function () {
-      selectTab(t.dataset.tab);
-    };
+    t.onclick = function () { selectTab(t.dataset.tab); };
   });
   $("search").addEventListener("input", render);
   $("manualSave").onclick = function () {
-    localStorage.setItem(
-      "maxon.manual",
-      JSON.stringify({ type: "m3u", m3u_url: $("manualUrl").value }),
-    );
+    localStorage.setItem("maxon.manual", JSON.stringify({ type: "m3u", m3u_url: $("manualUrl").value }));
     loadHome();
   };
   $("syncNow").onclick = function () {
     state.version = "";
-    MaxonApi.heartbeat().then(applyStatus);
+    state.catalogLoaded = false;
+    MaxonApi.heartbeat().then(applyStatus).catch(function (e) { $("net").textContent = e.message; });
   };
 
-  // ---- Boot ----
   registerKeys();
   MaxonApi.register()
     .then(function (st) {
@@ -240,12 +226,8 @@
           })
         : showActivation(st);
     })
-    .catch(function (e) {
-      $("net").textContent = "Sem conexão: " + e.message;
-    });
+    .catch(function (e) { $("net").textContent = "Sem conexão: " + e.message; });
   setInterval(function () {
-    MaxonApi.heartbeat()
-      .then(applyStatus)
-      .catch(function () {});
+    MaxonApi.heartbeat().then(applyStatus).catch(function () {});
   }, MAXON_CONFIG.HEARTBEAT_MS);
 })();
