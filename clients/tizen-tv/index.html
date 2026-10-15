@@ -14,6 +14,12 @@
     <p class="label">MAC / Device ID</p>
     <p id="deviceId" class="device-id">…</p>
     <p id="actStatus" class="muted"></p>
+    <div id="tvPairing" class="pairing-box">
+      <p class="muted">Para ativar sem digitar a KEY, informe este código no painel MAXON PLAY:</p>
+      <p id="tvCode" class="tv-code">Gerando código…</p>
+      <p id="tvCodeStatus" class="muted">O código vale por 10 minutos.</p>
+    </div>
+    <p class="muted">Ou use sua KEY de ativação:</p>
     <input id="keyInput" class="focusable key" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" />
     <button id="activateBtn" class="focusable btn">Ativar</button>
     <p id="actError" class="error"></p>

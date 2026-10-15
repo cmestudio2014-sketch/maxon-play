@@ -38,6 +38,12 @@
     activate: function (key) {
       return call("POST", "/activation/activate", { key: key });
     },
+    pairingRequest: function () {
+      return call("POST", "/pairing/request", {});
+    },
+    pairingStatus: function (code) {
+      return call("POST", "/pairing/status", { code: code });
+    },
     status: function () {
       return call("GET", "/device/status");
     },

@@ -3,6 +3,9 @@
   var $ = function (id) {
     return document.getElementById(id);
   };
+  var pairingCode = "";
+  var pairingTimer = null;
+  var pairingRequestBusy = false;
   var state = {
     version: localStorage.getItem("maxon.config_version") || "",
     managed: null,
@@ -47,7 +50,8 @@
   function showActivation(st) {
     $("deviceId").textContent = st.device_id;
     $("actStatus").textContent =
-      st.status === "nao_ativado" ? "Digite a KEY recebida após a compra." : "Status: " + st.status;
+      st.status === "nao_ativado" ? "Aguardando ativação." : "Status: " + st.status;
+    startTvPairing();
     // Licença inativa: revoga a fonte gerenciada local.
     state.managed = null;
     localStorage.removeItem("maxon.managed");
@@ -193,6 +197,59 @@
     }
   });
 
+  // ---- Ativação por código da TV via painel ----
+  function stopPairingPoll() {
+    if (pairingTimer) {
+      clearInterval(pairingTimer);
+      pairingTimer = null;
+    }
+  }
+
+  function startTvPairing() {
+    if (pairingRequestBusy || pairingCode) return;
+    pairingRequestBusy = true;
+    $("tvCodeStatus").textContent = "Gerando código seguro…";
+    MaxonApi.pairingRequest()
+      .then(function (result) {
+        pairingCode = result.code;
+        $("tvCode").textContent = pairingCode;
+        $("tvCodeStatus").textContent = "Digite este código em Ativações > Ativar código da TV no painel. Expira em 10 minutos.";
+        stopPairingPoll();
+        pairingTimer = setInterval(checkTvPairing, 3000);
+      })
+      .catch(function (e) {
+        $("tvCode").textContent = "—";
+        $("tvCodeStatus").textContent = "Não foi possível gerar o código: " + e.message;
+      })
+      .then(function () {
+        pairingRequestBusy = false;
+      });
+  }
+
+  function checkTvPairing() {
+    if (!pairingCode) return;
+    MaxonApi.pairingStatus(pairingCode)
+      .then(function (result) {
+        if (result.status === "ativado" && result.device) {
+          stopPairingPoll();
+          pairingCode = "";
+          $("tvCodeStatus").textContent = "TV ativada! Abrindo MAXON PLAY…";
+          return applyStatus(result.device).then(function () {
+            if (!state.items.length) return loadHome();
+          });
+        }
+        if (result.status === "expirado" || result.status === "invalido" || result.status === "cancelado") {
+          pairingCode = "";
+          stopPairingPoll();
+          $("tvCodeStatus").textContent = "Código expirado. Gerando outro…";
+          startTvPairing();
+        }
+      })
+      .catch(function () {
+        // Falhas temporárias não encerram a tentativa; a próxima consulta tenta novamente.
+      });
+  }
+
   // ---- Eventos ----
   $("keyInput").addEventListener("input", function () {
     var c = this.value
@@ -204,7 +261,7 @@
   $("activateBtn").onclick = function () {
     $("actError").textContent = "";
     MaxonApi.activate($("keyInput").value)
-      .then(applyStatus)
+      .then(function (st) { stopPairingPoll(); pairingCode = ""; return applyStatus(st); })
       .then(function () {
         if (!state.items.length) return loadHome();
       })
