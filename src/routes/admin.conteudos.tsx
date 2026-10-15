@@ -134,13 +134,14 @@ function ContentForm({ item, onSaved }: { item: CatalogContent | null; onSaved: 
       void act(save({ data: {
         ...(item ? { id: item.id } : {}),
         title,
-        category: category as CatalogContent["category"],
+        category,
         content_url: contentUrl,
         logo_url: logoUrl,
         description,
         enabled,
         sort_order: Number(sortOrder) || 0,
-      }}), item ? "Conteúdo atualizado." : "Conteúdo adicionado.", ["catalog-contents"], onSaved);
+      }}), item ? "Conteúdo atualizado." : "Conteúdo adicionado.", ["catalog-contents"])
+        .then((result) => { if (result) onSaved(); });
     }}>
       <div>
         <label className="mb-1 block text-sm font-medium">Nome do conteúdo *</label>
@@ -148,7 +149,7 @@ function ContentForm({ item, onSaved }: { item: CatalogContent | null; onSaved: 
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Categoria *</label>
-        <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={category} onChange={(e) => setCategory(e.target.value)} required>
+        <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={category} onChange={(e) => setCategory(e.target.value as CatalogContent["category"])} required>
           {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
       </div>
