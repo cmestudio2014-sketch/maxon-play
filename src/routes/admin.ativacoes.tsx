@@ -332,9 +332,9 @@ function TvCodeDialog({ open, customers, plans, sources, onClose, onActivate }: 
       <DialogContent>
         <DialogHeader><DialogTitle>Ativar pelo código mostrado na TV</DialogTitle></DialogHeader>
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Digite os 6 números exibidos no MAXON PLAY. O código expira em 10 minutos e só pode ser usado uma vez.</p>
+          <p className="text-sm text-muted-foreground">Digite o código numérico exibido no MAXON PLAY (até 8 números). O código expira em 10 minutos e só pode ser usado uma vez.</p>
           <Field label="Código da TV">
-            <Input autoFocus inputMode="numeric" maxLength={6} placeholder="123456" value={code}
+            <Input autoFocus inputMode="numeric" maxLength={8} placeholder="12345678" value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               className="text-center font-mono text-2xl tracking-[0.35em]" />
           </Field>
@@ -347,7 +347,7 @@ function TvCodeDialog({ open, customers, plans, sources, onClose, onActivate }: 
           <Field label="Fonte / Lista"><select className={selectCls} value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
             <option value="">Nenhuma / padrão</option>{sources.map((x:any) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select></Field>
-          <Button variant="hero" className="w-full" disabled={code.length !== 6 || !planId}
+          <Button variant="hero" className="w-full" disabled={(code.length < 6 || code.length > 8) || !planId}
             onClick={() => onActivate({ code, customer_id: customerId || null, plan_id: planId, source_id: sourceId || null })}>
             ATIVAR TV
           </Button>
