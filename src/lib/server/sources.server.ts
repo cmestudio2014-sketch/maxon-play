@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { env, isProduction } from "./env.server";
-import { q1 } from "./db.server";
+import { q, q1 } from "./db.server";
 
 export type SourcePayload =
   | { type: "m3u"; m3u_url: string; epg_url?: string }
@@ -45,6 +45,15 @@ export function displayHint(p: SourcePayload): string {
 type Resolved =
   { id: string; type: string; payload_enc: string; version: number; rev: string } | undefined;
 
+type CatalogRow = {
+  id: string;
+  title: string;
+  category: "ao_vivo" | "futebol" | "infantil" | "filmes" | "series" | "adulto";
+  content_url: string;
+  logo_url: string;
+  description: string;
+};
+
 /** Fonte efetiva do dispositivo: atribuição direta ao aparelho > atribuição à ativação. */
 async function resolve(deviceId: string): Promise<Resolved> {
   return q1(
@@ -57,25 +66,50 @@ async function resolve(deviceId: string): Promise<Resolved> {
   );
 }
 
-/** Versão da configuração (muda quando a fonte é alterada/atribuída/removida). Não revela dados. */
-export async function configVersion(deviceId: string, licensed: boolean): Promise<string> {
-  if (!licensed) return "none";
-  const r = await resolve(deviceId);
-  if (!r) return "none";
-  return createHash("sha256").update(`${r.id}:${r.version}:${r.rev}`).digest("hex").slice(0, 16);
+function versionFor(r: Resolved, catalogRevision: string | null | undefined): string {
+  const sourceRevision = r ? `${r.id}:${r.version}:${r.rev}` : "no-source";
+  return createHash("sha256")
+    .update(`${sourceRevision}:catalog:${catalogRevision ?? "empty"}`)
+    .digest("hex")
+    .slice(0, 16);
 }
 
-/** Configuração completa — chamar somente após confirmar licença ativa do dispositivo. */
+/** Versão da configuração: muda quando a fonte ou o catálogo é alterado. */
+export async function configVersion(deviceId: string, licensed: boolean): Promise<string> {
+  if (!licensed) return "none";
+  const [r, catalog] = await Promise.all([
+    resolve(deviceId),
+    q1<{ revision: string | null }>("SELECT max(updated_at)::text AS revision FROM catalog_contents"),
+  ]);
+  return versionFor(r, catalog?.revision);
+}
+
+/** Configuração completa — somente após confirmar licença ativa do dispositivo. */
 export async function deviceConfig(
   deviceId: string,
-): Promise<{ config_version: string; source: SourcePayload | null }> {
-  const r = await resolve(deviceId);
-  if (!r) return { config_version: "none", source: null };
+): Promise<{ config_version: string; source: SourcePayload | null; catalog: Array<{
+  id: string; name: string; url: string; logo: string; description: string; category: CatalogRow["category"]; kind: CatalogRow["category"];
+}> }> {
+  const [r, rows, catalog] = await Promise.all([
+    resolve(deviceId),
+    q<CatalogRow>(
+      `SELECT id, title, category, content_url, logo_url, description
+       FROM catalog_contents WHERE enabled=true
+       ORDER BY sort_order ASC, title ASC LIMIT 1000`,
+    ),
+    q1<{ revision: string | null }>("SELECT max(updated_at)::text AS revision FROM catalog_contents"),
+  ]);
   return {
-    config_version: createHash("sha256")
-      .update(`${r.id}:${r.version}:${r.rev}`)
-      .digest("hex")
-      .slice(0, 16),
-    source: decryptPayload(r.payload_enc),
+    config_version: versionFor(r, catalog?.revision),
+    source: r ? decryptPayload(r.payload_enc) : null,
+    catalog: rows.map((item) => ({
+      id: item.id,
+      name: item.title,
+      url: item.content_url,
+      logo: item.logo_url,
+      description: item.description,
+      category: item.category,
+      kind: item.category,
+    })),
   };
 }
