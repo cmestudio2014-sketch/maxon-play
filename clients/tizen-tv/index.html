@@ -8,52 +8,76 @@
   <script src="$WEBAPIS/webapis/webapis.js"></script>
 </head>
 <body>
-  <header><div class="logo"><span class="mark">▶</span> MAXON <b>PLAY</b></div><div id="net"></div></header>
+  <header>
+    <div class="logo"><span class="mark">▶</span> MAXON <b>PLAY</b><small>SEU MUNDO DE ENTRETENIMENTO</small></div>
+    <div class="top-status"><span class="live-dot"></span> SUA CENTRAL DE ENTRETENIMENTO <span id="net"></span></div>
+  </header>
 
   <section id="activation" class="screen hidden">
-    <p class="label">MAC / Device ID</p>
-    <p id="deviceId" class="device-id">…</p>
-    <p id="actStatus" class="muted"></p>
-    <div id="tvPairing" class="pairing-box">
-      <p class="muted">Para ativar sem digitar a KEY, informe este código no painel MAXON PLAY:</p>
-      <p id="tvCode" class="tv-code">Gerando código…</p>
-      <p id="tvCodeStatus" class="muted">O código vale por 10 minutos.</p>
+    <div class="activation-panel">
+      <p class="eyebrow">BEM-VINDO AO SEU PRÓXIMO NÍVEL</p>
+      <h1>MAXON <span>PLAY</span></h1>
+      <p class="label">IDENTIFICAÇÃO DA TV</p>
+      <p id="deviceId" class="device-id">…</p>
+      <p id="actStatus" class="muted"></p>
+      <div id="tvPairing" class="pairing-box">
+        <p class="muted">Ative sua TV usando o código no painel MAXON PLAY.</p>
+        <p id="tvCode" class="tv-code">Gerando código…</p>
+        <p id="tvCodeStatus" class="muted">O código vale por 10 minutos.</p>
+      </div>
+      <p class="muted">Ou informe sua KEY de ativação:</p>
+      <input id="keyInput" class="focusable key" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" />
+      <button id="activateBtn" class="focusable btn">Ativar dispositivo →</button>
+      <p id="actError" class="error"></p>
     </div>
-    <p class="muted">Ou use sua KEY de ativação:</p>
-    <input id="keyInput" class="focusable key" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19" />
-    <button id="activateBtn" class="focusable btn">Ativar</button>
-    <p id="actError" class="error"></p>
   </section>
 
   <section id="home" class="screen hidden">
-    <nav id="tabs">
-      <button class="focusable tab" data-tab="live">Live TV</button>
-      <button class="focusable tab" data-tab="movie">Filmes</button>
-      <button class="focusable tab" data-tab="series">Séries</button>
-      <button class="focusable tab" data-tab="fav">Favoritos</button>
-      <button class="focusable tab" data-tab="search">Busca</button>
-      <button class="focusable tab" data-tab="settings">Configurações</button>
-    </nav>
-    <input id="search" class="focusable hidden" placeholder="Buscar…" />
-    <div id="grid"></div>
-    <div id="settings" class="hidden">
-      <p id="info" class="muted"></p>
-      <div id="manual">
-        <p>Adicionar lista autorizada manualmente (M3U):</p>
-        <input id="manualUrl" class="focusable" placeholder="https://…/lista.m3u" />
-        <button id="manualSave" class="focusable btn">Salvar</button>
+    <aside class="sidebar">
+      <p class="side-label">MENU PRINCIPAL</p>
+      <nav id="tabs">
+        <button class="focusable tab active" data-tab="live"><span>▣</span> Ao Vivo</button>
+        <button class="focusable tab" data-tab="football"><span>⚽</span> Futebol</button>
+        <button class="focusable tab" data-tab="movie"><span>▧</span> Filmes</button>
+        <button class="focusable tab" data-tab="series"><span>▤</span> Séries</button>
+        <button class="focusable tab" data-tab="kids"><span>☺</span> Kids</button>
+        <button class="focusable tab" data-tab="fav"><span>♡</span> Minha lista</button>
+        <button class="focusable tab" data-tab="search"><span>⌕</span> Buscar</button>
+        <button class="focusable tab adult-tab" data-tab="adult"><span>18+</span> Adulto</button>
+        <button class="focusable tab settings-tab" data-tab="settings"><span>⚙</span> Configurações</button>
+      </nav>
+      <div class="sidebar-footer"><span class="status-orb"></span> MAXON PLAY <small>ENTRETENIMENTO SEM LIMITES</small></div>
+    </aside>
+
+    <main class="main-content">
+      <div class="welcome-row"><div><p class="eyebrow">BOM TE VER POR AQUI</p><h2>O que vamos assistir <span>hoje?</span></h2></div><div class="quality-pill">✦ EXPERIÊNCIA PREMIUM</div></div>
+      <section class="hero">
+        <div class="hero-copy"><span class="hero-tag">DESTAQUE MAXON</span><h1>SEU PRÓXIMO<br/><em>VÍCIO</em> COMEÇA AQUI.</h1><p>Grandes histórias. Emoções ao vivo.<br/>Tudo em um só lugar.</p><div class="hero-actions"><span class="hero-action">▶ &nbsp; ESCOLHA UMA CATEGORIA</span><span class="hero-note">NAVEGUE COM SEU CONTROLE</span></div></div>
+        <div class="hero-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="play-emblem">▶</div><div class="hero-glow"></div><span class="art-caption">ENTRETENIMENTO<br/><b>EM OUTRO NÍVEL</b></span></div>
+      </section>
+      <div class="section-heading"><div><span class="section-kicker">EXPLORE</span><h3>Seu universo</h3></div><span class="section-hint">SELECIONE UMA CATEGORIA</span></div>
+      <div class="category-strip">
+        <button class="focusable category-card cat-live" data-tab="live"><span class="cat-icon">▣</span><b>Ao Vivo</b><small>Canais e programação</small><i>→</i></button>
+        <button class="focusable category-card cat-football" data-tab="football"><span class="cat-icon">⚽</span><b>Futebol</b><small>Jogos e esportes</small><i>→</i></button>
+        <button class="focusable category-card cat-movies" data-tab="movie"><span class="cat-icon">▧</span><b>Filmes</b><small>Histórias para sentir</small><i>→</i></button>
+        <button class="focusable category-card cat-series" data-tab="series"><span class="cat-icon">▤</span><b>Séries</b><small>Mais um episódio?</small><i>→</i></button>
+        <button class="focusable category-card cat-kids" data-tab="kids"><span class="cat-icon">☺</span><b>Kids</b><small>Diversão para família</small><i>→</i></button>
+        <button class="focusable category-card cat-adult" data-tab="adult"><span class="cat-icon">18+</span><b>Adulto</b><small>Acesso protegido</small><i>→</i></button>
       </div>
-      <button id="syncNow" class="focusable btn">Sincronizar agora</button>
-    </div>
+      <div class="section-heading content-heading"><div><span class="section-kicker">PERSONALIZE</span><h3 id="contentTitle">Canais ao vivo</h3></div><span id="contentCount" class="section-hint">SEU CONTEÚDO, DO SEU JEITO</span></div>
+      <input id="search" class="focusable hidden" placeholder="Buscar canais, filmes e séries..." />
+      <div id="grid"></div>
+      <div id="settings" class="settings-panel hidden">
+        <p id="info" class="muted"></p>
+        <div id="manual"><p>Adicionar lista autorizada manualmente (M3U):</p><input id="manualUrl" class="focusable" placeholder="https://…/lista.m3u" /><button id="manualSave" class="focusable btn">Salvar lista</button></div>
+        <button id="syncNow" class="focusable btn">⟳ &nbsp; Sincronizar agora</button>
+        <div class="parental-card"><b>CONTROLE DOS PAIS</b><p>Configure um PIN para restringir canais e categorias.</p><span>PIN inicial: 0000 · Recomendamos alterar no primeiro acesso.</span></div>
+      </div>
+      <footer class="app-footer"><span>◈ &nbsp; QUALIDADE DE IMAGEM</span><span>◉ &nbsp; NAVEGAÇÃO SIMPLES</span><span>✦ &nbsp; MAXON PLAY É PRA VOCÊ</span></footer>
+    </main>
   </section>
 
   <div id="player" class="hidden"><object id="av-player" type="application/avplayer"></object><video id="html5" class="hidden"></video><p id="nowPlaying"></p></div>
-
-  <script src="js/config.js"></script>
-  <script src="js/device.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/playlist.js"></script>
-  <script src="js/player.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js"></script><script src="js/device.js"></script><script src="js/api.js"></script><script src="js/playlist.js"></script><script src="js/player.js"></script><script src="js/app.js"></script>
 </body>
 </html>
