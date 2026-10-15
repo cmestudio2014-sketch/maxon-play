@@ -286,7 +286,7 @@ export const listDevices = createServerFn({ method: "GET" }).handler(async () =>
 });
 export const activateDeviceByTvCode = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
-    code: z.string().trim().regex(/^\\d{6}$/, "Código deve ter 6 números."),
+    code: z.string().trim().regex(/^\d{6,8}$/, "Código deve ter de 6 a 8 números."),
     customer_id: uuid.nullable(), plan_id: uuid, source_id: uuid.nullable().default(null),
   }).parse(d))
   .handler(async ({ data }) => {
