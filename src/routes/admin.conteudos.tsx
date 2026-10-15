@@ -22,6 +22,7 @@ const categories = [
   { value: "infantil", label: "Infantil" },
   { value: "filmes", label: "Filmes" },
   { value: "series", label: "Séries" },
+  { value: "adulto", label: "Adulto" },
 ] as const;
 
 function categoryLabel(value: string) {
