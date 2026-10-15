@@ -967,7 +967,7 @@ export const forceSync = createServerFn({ method: "POST" })
 export type CatalogContent = {
   id: string;
   title: string;
-  category: "ao_vivo" | "futebol" | "infantil" | "filmes" | "series";
+  category: "ao_vivo" | "futebol" | "infantil" | "filmes" | "series" | "adulto";
   content_url: string;
   logo_url: string;
   description: string;
@@ -979,7 +979,7 @@ export type CatalogContent = {
 const CatalogContentInput = z.object({
   id: uuid.optional(),
   title: z.string().trim().min(1).max(120),
-  category: z.enum(["ao_vivo", "futebol", "infantil", "filmes", "series"]),
+  category: z.enum(["ao_vivo", "futebol", "infantil", "filmes", "series", "adulto"]),
   content_url: z.string().trim().url().max(1000).refine((value) => /^https?:\/\//i.test(value), "Use uma URL HTTP ou HTTPS."),
   logo_url: z.string().trim().max(500).optional().default("").refine((value) => !value || /^https?:\/\//i.test(value), "O logo deve usar HTTP ou HTTPS."),
   description: z.string().trim().max(500).optional().default(""),
