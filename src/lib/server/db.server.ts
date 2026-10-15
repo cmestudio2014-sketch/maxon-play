@@ -7,12 +7,14 @@
  */
 import migration001 from "../../../db/migrations/001_init.sql?raw";
 import migration002 from "../../../db/migrations/002_sources.sql?raw";
+import migration003 from "../../../db/migrations/003_catalog_contents.sql?raw";
 import seedSql from "../../../db/seed.sql?raw";
 import { env, isProduction } from "./env.server";
 
 export const MIGRATIONS: { version: string; sql: string }[] = [
   { version: "001_init", sql: migration001 },
   { version: "002_sources", sql: migration002 },
+  { version: "003_catalog_contents", sql: migration003 },
 ];
 
 type Row = Record<string, unknown>;
