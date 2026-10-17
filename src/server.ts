@@ -91,7 +91,7 @@ async function streamProxy(request: Request): Promise<Response | null> {
     "user-agent": request.headers.get("user-agent") ?? "Mozilla/5.0 MAXON-PLAY",
   };
   const range = request.headers.get("range");
-  if (range) headers.range = range;
+  if (range) headers["range"] = range;
 
   let upstream: Response;
   try {

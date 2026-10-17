@@ -159,6 +159,8 @@ export type Customer = {
   status: string;
   created_at: string;
   activations: number;
+  app_username: string | null;
+  app_password: string | null;
 };
 export const listCustomers = createServerFn({ method: "GET" }).handler(async () => {
   await requireAdmin();
@@ -1132,8 +1134,8 @@ export const importSourceCatalog = createServerFn({method:"POST"})
       const text=(await r.text()).slice(0,25_000_000); const lines=text.split(/\r?\n/);
       const {createHash}=await import("node:crypto");
       for(let i=0;i<lines.length&&items.length<30000;i++){
-        const l=lines[i].trim(); if(!l.startsWith("#EXTINF:")) continue;
-        let j=i+1; while(j<lines.length&&(!lines[j].trim()||lines[j].trim().startsWith("#"))) j++;
+        const l=(lines[i] ?? "").trim(); if(!l.startsWith("#EXTINF:")) continue;
+        let j=i+1; while(j<lines.length){const candidate=(lines[j] ?? "").trim();if(candidate&&!candidate.startsWith("#"))break;j++;}
         const stream=lines[j]?.trim(); if(!stream||!/^https?:\/\//i.test(stream)) continue;
         const name=safeName(l.split(",").slice(1).join(","),"Canal");
         const category=safeName(attr(l,"group-title"),"Sem categoria");
@@ -1157,7 +1159,7 @@ export const importSourceCatalog = createServerFn({method:"POST"})
           const raw=kind==="series"?x.series_id:x.stream_id; if(raw==null) continue;
           const ext=String(x.container_extension||"").replace(/[^a-zA-Z0-9]/g,"")|| (kind==="live"?"ts":"mp4");
           const streamRef=kind==="series"?undefined:`${base}/${kind==="live"?"live":"movie"}/${encodeURIComponent(p.username)}/${encodeURIComponent(p.password)}/${raw}.${ext}`;
-          items.push({external_key:`${kind}:${String(raw)}`,kind,name:safeName(x.name,kind==="live"?"Canal":kind==="movie"?"Filme":"Série"),category:categories.get(`${kind}:${x.category_id}`)||"Sem categoria",stream_ref:streamRef});
+          items.push({external_key:`${kind}:${String(raw)}`,kind,name:safeName(x.name,kind==="live"?"Canal":kind==="movie"?"Filme":"Série"),category:categories.get(`${kind}:${x.category_id}`)||"Sem categoria",...(streamRef ? {stream_ref:streamRef} : {})});
         }
       }
     }
@@ -1188,7 +1190,7 @@ export const savePlaylistCategoryRule=createServerFn({method:"POST"})
    VALUES($1,$2,$3,$4,$5) ON CONFLICT(playlist_id,source_id,source_category)
    DO UPDATE SET kind=EXCLUDED.kind,custom_category=EXCLUDED.custom_category,updated_at=now()`,
    [data.playlist_id,data.source_id,data.category,data.kind,data.custom_category||null]);
-  await q("UPDATE source_catalog_items SET kind=$3 WHERE source_id=$1 AND category=$2",[data.source_id,data.category,data.kind]);
+
   await audit({...actor(u),action:"playlist.category_rule",entity:"playlist",entityId:data.playlist_id,details:{source_id:data.source_id,category:data.category,kind:data.kind}});
   return{ok:true}});
 
@@ -1196,11 +1198,20 @@ export type CatalogItem={id:string;source_id:string;source_name:string;kind:"liv
 export const listPlaylistCatalog = createServerFn({method:"POST"})
  .inputValidator(d=>z.object({playlist_id:uuid}).parse(d))
  .handler(async({data})=>{await requireAdmin();return q<CatalogItem>(
-   `SELECT ci.id,ci.source_id,s.name source_name,ci.kind,ci.name,ci.category,
-    coalesce(r.enabled,true) enabled,r.custom_name,r.custom_category
-    FROM source_catalog_items ci JOIN playlist_sources ps ON ps.source_id=ci.source_id AND ps.playlist_id=$1 AND ps.active
-    JOIN sources s ON s.id=ci.source_id LEFT JOIN playlist_item_rules r ON r.catalog_item_id=ci.id AND r.playlist_id=$1
-    ORDER BY ci.kind,ci.category,ci.name LIMIT 30000`,[data.playlist_id])});
+   `SELECT ci.id,ci.source_id,s.name source_name,
+    coalesce(cr.kind,ci.kind) kind,ci.name,ci.category,
+    coalesce(r.enabled,true) enabled,r.custom_name,
+    coalesce(r.custom_category,cr.custom_category) custom_category
+    FROM source_catalog_items ci
+    JOIN playlist_sources ps ON ps.source_id=ci.source_id AND ps.playlist_id=$1 AND ps.active
+    JOIN sources s ON s.id=ci.source_id
+    LEFT JOIN playlist_item_rules r ON r.catalog_item_id=ci.id AND r.playlist_id=$1
+    LEFT JOIN playlist_category_rules cr ON cr.playlist_id=$1
+      AND cr.source_id=ci.source_id AND cr.source_category=ci.category
+    ORDER BY coalesce(cr.kind,ci.kind),
+      coalesce(r.custom_category,cr.custom_category,ci.category),
+      coalesce(r.custom_name,ci.name)
+    LIMIT 30000`,[data.playlist_id])});
 export const savePlaylistItemRule=createServerFn({method:"POST"})
  .inputValidator(d=>z.object({playlist_id:uuid,item_id:uuid,enabled:z.boolean(),custom_name:z.string().trim().max(180).nullable().optional(),custom_category:z.string().trim().max(120).nullable().optional()}).parse(d))
  .handler(async({data})=>{const u=await requireAdmin(["admin"]);await q(

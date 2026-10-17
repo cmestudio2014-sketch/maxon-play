@@ -344,6 +344,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
     const start = async () => {
       if (!candidates.length) { setError("URL de vídeo inválida."); return; }
       let selected = candidates[0];
+      if (!selected) { setError("URL de vídeo inválida."); return; }
       let detected = item.kind === "live" ? await probe(selected) : null;
       if (item.kind === "live" && detected && !detected.ok) {
         for (const candidate of candidates.slice(1)) {
@@ -403,7 +404,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
               });
               player.attachMediaElement(v);
               player.load();
-              void player.play().catch(() => {
+              void Promise.resolve(player.play()).catch(() => {
                 if (!disposed) setError("Não foi possível iniciar MPEG-TS; verifique o servidor ou codec.");
               });
             }).catch(() => { if (!disposed) setError("Falha ao carregar mecanismo MPEG-TS."); });
@@ -429,7 +430,7 @@ function VideoPlayer({ item, onClose }: { item: Item; onClose: () => void }) {
         });
         player.attachMediaElement(v); player.load();
         armStartupWatch("MPEG-TS");
-        void player.play().catch(() => setError("MPEG-TS detectado, mas a reprodução não iniciou.")); return;
+        void Promise.resolve(player.play()).catch(() => setError("MPEG-TS detectado, mas a reprodução não iniciou.")); return;
       }
       armStartupWatch("Stream");
       const ok = await playDirect(selected);
