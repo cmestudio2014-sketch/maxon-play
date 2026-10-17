@@ -8,7 +8,27 @@ export type Item = {
   group: string;
   url: string;
   kind: "live" | "movie" | "series";
+  category?: "ao_vivo" | "futebol" | "infantil" | "filmes" | "series" | "adulto";
 };
+
+
+function classifyCategory(
+  name: string,
+  group: string,
+  kind: Item["kind"],
+): NonNullable<Item["category"]> {
+  const text = (group + " " + name)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (/\b(adulto|adult|xxx|erotic|erotico)\b|18\+/.test(text)) return "adulto";
+  if (/\b(infantil|crianca|kids|junior|cartoon|desenho)\b/.test(text)) return "infantil";
+  if (/\b(futebol|soccer|football|brasileirao|libertadores|champions|esporte|sport|fifa|uefa)\b|premier league|serie a|serie b|copa do mundo/.test(text)) return "futebol";
+  if (kind === "movie") return "filmes";
+  if (kind === "series") return "series";
+  return "ao_vivo";
+}
 
 export function parseM3U(text: string): Item[] {
   const lines = text.split(/\r?\n/);
@@ -30,7 +50,7 @@ export function parseM3U(text: string): Item[] {
         : /\/series\//.test(line)
           ? "series"
           : "live";
-      out.push({ id: `${out.length}`, ...meta, url: line, kind });
+      out.push({ id: `${out.length}`, ...meta, url: line, kind, category: classifyCategory(meta.name, meta.group, kind) });
       meta = null;
     }
   }
@@ -85,6 +105,7 @@ export async function loadXtream(s: {
       group: lm.get(x.category_id) ?? "Geral",
       url: `${base}/live/${u}/${p}/${x.stream_id}.${liveExt}`,
       kind: "live" as const,
+      category: classifyCategory(x.name, lm.get(x.category_id) ?? "Geral", "live"),
     })),
     ...vs.map((x) => ({
       id: `v${x.stream_id}`,
@@ -93,6 +114,7 @@ export async function loadXtream(s: {
       group: vm.get(x.category_id) ?? "Geral",
       url: `${base}/movie/${u}/${p}/${x.stream_id}.${x.container_extension ?? "mp4"}`,
       kind: "movie" as const,
+      category: classifyCategory(x.name, vm.get(x.category_id) ?? "Geral", "movie"),
     })),
     ...ss.map((x) => ({
       id: `s${x.series_id}`,
@@ -101,6 +123,7 @@ export async function loadXtream(s: {
       group: sm.get(x.category_id) ?? "Geral",
       url: "",
       kind: "series" as const,
+      category: classifyCategory(x.name, sm.get(x.category_id) ?? "Geral", "series"),
     })),
   ];
 }

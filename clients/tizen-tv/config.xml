@@ -15,5 +15,5 @@
     <access origin="https://maxonplay.squareweb.app" subdomains="true"/>
     <access origin="*" subdomains="true"/>
     <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="enable" install-location="auto" hwkey-event="enable"/>
-    <tizen:profile name="tv-samsung"/>
+    <tizen:profile name="tv"/>
 </widget>

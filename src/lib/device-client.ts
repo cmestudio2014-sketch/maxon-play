@@ -78,5 +78,17 @@ export async function heartbeat(): Promise<DeviceStatus> {
   }
 }
 export async function fetchConfig() {
-  return call<{ config_version: string; source: SourceConfig | null }>("/device/config");
+  return call<{
+    config_version: string;
+    source: SourceConfig | null;
+    catalog: Array<{
+      id: string;
+      name: string;
+      url: string;
+      logo: string;
+      description: string;
+      category: "ao_vivo" | "futebol" | "infantil" | "filmes" | "series" | "adulto";
+      kind: "ao_vivo" | "futebol" | "infantil" | "filmes" | "series" | "adulto";
+    }>;
+  }>("/device/config");
 }

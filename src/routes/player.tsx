@@ -30,7 +30,7 @@ export const Route = createFileRoute("/player")({
   component: Player,
 });
 
-type Tab = "home" | "live" | "movie" | "series" | "fav" | "search" | "settings";
+type Tab = "home" | "live" | "ao_vivo" | "futebol" | "infantil" | "movie" | "filmes" | "series" | "adulto" | "fav" | "search" | "settings";
 const MANUAL_KEY = "maxon.manual_source";
 const FAV_KEY = "maxon.favorites";
 
@@ -39,6 +39,7 @@ function Player() {
   const [source, setSource] = useState<SourceConfig | null>(null);
   const [managed, setManaged] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
+  const [catalogItems, setCatalogItems] = useState<Item[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [group, setGroup] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -69,8 +70,18 @@ function Player() {
       version.current = st.config_version;
       if (st.status === "ativo" && st.config_version !== "none") {
         const cfg = await fetchConfig();
+        const allowed = new Set(["ao_vivo", "futebol", "infantil", "filmes", "series", "adulto"]);
+        setCatalogItems((cfg.catalog ?? []).filter((c) => allowed.has(c.category)).map((c) => ({
+          id: c.id,
+          name: c.name,
+          logo: c.logo || "",
+          group: c.category,
+          url: c.url,
+          category: c.category,
+          kind: (c.category === "filmes" ? "movie" : c.category === "series" ? "series" : "live") as Item["kind"],
+        })));
         setManaged(true);
-        toast.success("Lista atualizada pelo provedor.");
+        toast.success("Lista e catálogo atualizados pelo painel.");
         await apply(cfg.source);
       } else {
         setManaged(false);
@@ -100,23 +111,28 @@ function Player() {
     localStorage.setItem(FAV_KEY, JSON.stringify(next));
   };
 
+  const allItems = useMemo(() => [...items, ...catalogItems], [items, catalogItems]);
+
   const visible = useMemo(() => {
-    let list = items;
-    if (tab === "live" || tab === "movie" || tab === "series")
-      list = list.filter((i) => i.kind === tab);
+    let list = allItems;
+    if (tab === "live") list = list.filter((i) => i.kind === "live");
+    if (tab === "movie") list = list.filter((i) => i.kind === "movie");
+    if (tab === "series") list = list.filter((i) => i.kind === "series");
+    if (["ao_vivo", "futebol", "infantil", "filmes", "adulto"].includes(tab))
+      list = list.filter((i) => i.category === tab || (tab === "ao_vivo" && i.kind === "live" && !i.category));
     if (tab === "fav") list = list.filter((i) => favs.includes(i.id));
     if (tab === "search")
       list = q.length < 2 ? [] : list.filter((i) => i.name.toLowerCase().includes(q.toLowerCase()));
     if (group && tab !== "search") list = list.filter((i) => i.group === group);
     return list.slice(0, 300);
-  }, [items, tab, favs, q, group]);
+  }, [allItems, tab, favs, q, group]);
   const groups = useMemo(
     () =>
-      [...new Set(items.filter((i) => tab === "home" || i.kind === tab).map((i) => i.group))].slice(
+      [...new Set(allItems.filter((i) => tab === "home" || i.kind === tab || i.category === tab).map((i) => i.group))].slice(
         0,
         80,
       ),
-    [items, tab],
+    [allItems, tab],
   );
 
   if (dev && dev.status !== "ativo") {
@@ -137,8 +153,13 @@ function Player() {
   const tabs: [Tab, string, typeof Tv][] = [
     ["home", "Início", Home],
     ["live", "Live TV", Tv],
+    ["ao_vivo", "Ao Vivo", Tv],
+    ["futebol", "Futebol", Tv],
+    ["infantil", "Infantil", Home],
     ["movie", "Filmes", Film],
+    ["filmes", "Filmes do painel", Film],
     ["series", "Séries", Clapperboard],
+    ["adulto", "Adulto", Tv],
     ["fav", "Favoritos", Heart],
     ["search", "Busca", Search],
     ["settings", "Configurações", Settings],
