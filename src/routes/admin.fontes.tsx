@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DataTable, PageHeader, Td, useAction, useAdminQuery } from "@/components/admin-ui";
 import { fmtDateTime } from "@/components/brand";
 import { SourceForm } from "@/components/source-form";
+import { PlaylistWorkbench } from "@/components/playlist-workbench";
 import { deleteSource, listCustomers, listSources, type Source } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin/fontes")({ component: Fontes });
@@ -85,6 +86,7 @@ function Fontes() {
           </tr>
         ))}
       </DataTable>
+      <PlaylistWorkbench />
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
