@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, ArrowRight, Download, FileUp, Link2, ListPlus, Move,
-  Plus, Server, Trash2, Upload, Check, RefreshCw
+  ArrowLeft, ArrowRight, Download, FileUp, Link2, ListPlus,
+  Plus, Trash2, Upload, Check, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
