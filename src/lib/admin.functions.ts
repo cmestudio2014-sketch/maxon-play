@@ -266,6 +266,28 @@ export const setDeviceStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const deleteDevice = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    const u = await requireAdmin(["admin"]);
+    const device = await q1<{ id: string; display_id: string }>(
+      "SELECT id, display_id FROM devices WHERE id=$1",
+      [data.id],
+    );
+    if (!device) throw new Error("Dispositivo não encontrado.");
+
+    await q("UPDATE activations SET device_id=NULL WHERE device_id=$1", [data.id]);
+    await q("DELETE FROM devices WHERE id=$1", [data.id]);
+    await audit({
+      ...actor(u),
+      action: "device.delete",
+      entity: "device",
+      entityId: data.id,
+      details: { display_id: device.display_id },
+    });
+    return { ok: true };
+  });
+
 // ---------------- Ativações ----------------
 export type Activation = {
   source_id: string | null;
@@ -963,6 +985,172 @@ export const forceSync = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+// Testa a conexão do servidor sem devolver credenciais ao navegador.
+export const testSource = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+
+    const rows = await q<{ payload_enc: string }>(
+      "SELECT payload_enc FROM sources WHERE id=$1",
+      [data.id],
+    );
+    if (!rows.length) throw new Error("Servidor não encontrado.");
+
+    const { decryptPayload } = await import("./server/sources.server");
+    const row0 = rows[0];
+    if (!row0) throw new Error("Registro não encontrado");
+    const payload = decryptPayload(row0.payload_enc);
+    const base = payload.type === "m3u" ? payload.m3u_url : payload.server;
+
+    let url: URL;
+    try {
+      url = new URL(base);
+    } catch {
+      throw new Error("Endereço do servidor inválido.");
+    }
+
+    if (
+      !["http:", "https:"].includes(url.protocol) ||
+      !url.hostname ||
+      url.username ||
+      url.password ||
+      /^(localhost|.*\.localhost|.*\.local)$/i.test(url.hostname) ||
+      /^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(url.hostname) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(url.hostname) ||
+      url.hostname === "::1" ||
+      url.hostname.startsWith("[fc") ||
+      url.hostname.startsWith("[fd")
+    ) {
+      throw new Error("Endereço não permitido para teste.");
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      let target = url;
+      const init: RequestInit = {
+        method: "GET",
+        redirect: "manual",
+        signal: controller.signal,
+        headers: { Range: "bytes=0-0" },
+      };
+
+      if (payload.type === "xtream") {
+        target = new URL(url.toString().replace(/\/+$/, "") + "/player_api.php");
+        init.method = "POST";
+        init.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+        init.body = new URLSearchParams({
+          username: payload.username,
+          password: payload.password,
+        }).toString();
+      }
+
+      const response = await fetch(target, init);
+      try {
+        await response.body?.cancel();
+      } catch {
+        // O corpo não é necessário para verificar a resposta HTTP.
+      }
+
+      if (response.status >= 200 && response.status < 300) {
+        await audit({
+          ...actor(await requireAdmin()),
+          action: "source.test",
+          entity: "source",
+          entityId: data.id,
+          details: { type: payload.type, status: response.status },
+        });
+        return { ok: true, message: `Servidor respondeu (HTTP ${response.status}).` };
+      }
+
+      throw new Error(
+        response.status >= 300 && response.status < 400
+          ? "O servidor redirecionou a conexão. Confira o endereço cadastrado."
+          : `O servidor respondeu com HTTP ${response.status}. Confira o endereço e as credenciais.`,
+      );
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        throw new Error("Tempo limite de 8 segundos excedido.");
+      }
+      throw e instanceof Error ? e : new Error("Não foi possível conectar ao servidor.");
+    } finally {
+      clearTimeout(timeout);
+    }
+  });
+
+
+
+// ---------------- Servidores de hospedagem ----------------
+export type HostingServer = {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  protocol: "http" | "https" | "tcp" | "dns";
+  created_at: string;
+  updated_at: string;
+};
+
+export const listHostingServers = createServerFn({ method: "GET" }).handler(async () => {
+  await ready();
+  await requireAdmin();
+  return q<HostingServer>(
+    "SELECT id,name,host,port,protocol,created_at,updated_at FROM hosting_servers ORDER BY created_at DESC"
+  );
+});
+
+export const saveHostingServer = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    name: z.string().trim().min(1).max(100),
+    host: z.string().trim().min(1).max(253),
+    port: z.number().int().min(1).max(65535),
+    protocol: z.enum(["http","https","tcp"]),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    await ready();
+    const u = await requireAdmin();
+    const { validateHost } = await import("./server/hosting-servers.server");
+    const host = validateHost(data.host);
+    const row = await q1<HostingServer>(
+      "INSERT INTO hosting_servers(name,host,port,protocol) VALUES($1,$2,$3,$4) RETURNING id,name,host,port,protocol,created_at,updated_at",
+      [data.name, host, data.port, data.protocol]
+    );
+    await audit({ ...actor(u), action: "hosting_server.create", entity: "hosting_server", entityId: row?.id ?? null });
+    return row;
+  });
+
+export const deleteHostingServer = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    await ready();
+    const u = await requireAdmin();
+    const row = await q1<{ id: string; name: string }>(
+      "DELETE FROM hosting_servers WHERE id=$1 RETURNING id,name", [data.id]
+    );
+    if (!row) throw new Error("Servidor não encontrado.");
+    await audit({ ...actor(u), action: "hosting_server.delete", entity: "hosting_server", entityId: row.id, details: { name: row.name } });
+    return { ok: true };
+  });
+
+export const testHostingServer = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: uuid }).parse(d))
+  .handler(async ({ data }) => {
+    await ready();
+    const u = await requireAdmin();
+    const row = await q1<HostingServer>(
+      "SELECT id,name,host,port,protocol,created_at,updated_at FROM hosting_servers WHERE id=$1", [data.id]
+    );
+    if (!row) throw new Error("Servidor não encontrado.");
+    const { testServer } = await import("./server/hosting-servers.server");
+    const result = await testServer(row.host, row.port, row.protocol);
+    await audit({ ...actor(u), action: "hosting_server.test", entity: "hosting_server", entityId: row.id, details: { ok: true, protocol: row.protocol } });
+    return result;
+  });
+
+
 // ---------------- Catálogo de conteúdos ----------------
 export type CatalogContent = {
   id: string;

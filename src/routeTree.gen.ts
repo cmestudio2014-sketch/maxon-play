@@ -21,10 +21,12 @@ import { Route as AdminAtivacoesRouteImport } from './routes/admin.ativacoes'
 import { Route as AdminAuditoriaRouteImport } from './routes/admin.auditoria'
 import { Route as AdminClientesRouteImport } from './routes/admin.clientes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
+import { Route as AdminConteudosRouteImport } from './routes/admin.conteudos'
 import { Route as AdminCuponsRouteImport } from './routes/admin.cupons'
 import { Route as AdminDispositivosRouteImport } from './routes/admin.dispositivos'
 import { Route as AdminFontesRouteImport } from './routes/admin.fontes'
 import { Route as AdminPlanosRouteImport } from './routes/admin.planos'
+import { Route as AdminServidoresRouteImport } from './routes/admin.servidores'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminVendasRouteImport } from './routes/admin.vendas'
 import { Route as ApiV1ActivationActivateRouteImport } from './routes/api/v1/activation/activate'
@@ -94,6 +96,11 @@ const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminConteudosRoute = AdminConteudosRouteImport.update({
+  id: '/conteudos',
+  path: '/conteudos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCuponsRoute = AdminCuponsRouteImport.update({
   id: '/cupons',
   path: '/cupons',
@@ -112,6 +119,11 @@ const AdminFontesRoute = AdminFontesRouteImport.update({
 const AdminPlanosRoute = AdminPlanosRouteImport.update({
   id: '/planos',
   path: '/planos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminServidoresRoute = AdminServidoresRouteImport.update({
+  id: '/servidores',
+  path: '/servidores',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
@@ -167,10 +179,12 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/conteudos': typeof AdminConteudosRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/dispositivos': typeof AdminDispositivosRoute
   '/admin/fontes': typeof AdminFontesRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/servidores': typeof AdminServidoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/vendas': typeof AdminVendasRoute
   '/admin/': typeof AdminIndexRoute
@@ -192,10 +206,12 @@ export interface FileRoutesByTo {
   '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/conteudos': typeof AdminConteudosRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/dispositivos': typeof AdminDispositivosRoute
   '/admin/fontes': typeof AdminFontesRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/servidores': typeof AdminServidoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/vendas': typeof AdminVendasRoute
   '/admin': typeof AdminIndexRoute
@@ -219,10 +235,12 @@ export interface FileRoutesById {
   '/admin/auditoria': typeof AdminAuditoriaRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/conteudos': typeof AdminConteudosRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/dispositivos': typeof AdminDispositivosRoute
   '/admin/fontes': typeof AdminFontesRoute
   '/admin/planos': typeof AdminPlanosRoute
+  '/admin/servidores': typeof AdminServidoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/vendas': typeof AdminVendasRoute
   '/admin/': typeof AdminIndexRoute
@@ -247,10 +265,12 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/clientes'
     | '/admin/configuracoes'
+    | '/admin/conteudos'
     | '/admin/cupons'
     | '/admin/dispositivos'
     | '/admin/fontes'
     | '/admin/planos'
+    | '/admin/servidores'
     | '/admin/usuarios'
     | '/admin/vendas'
     | '/admin/'
@@ -272,10 +292,12 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/clientes'
     | '/admin/configuracoes'
+    | '/admin/conteudos'
     | '/admin/cupons'
     | '/admin/dispositivos'
     | '/admin/fontes'
     | '/admin/planos'
+    | '/admin/servidores'
     | '/admin/usuarios'
     | '/admin/vendas'
     | '/admin'
@@ -298,10 +320,12 @@ export interface FileRouteTypes {
     | '/admin/auditoria'
     | '/admin/clientes'
     | '/admin/configuracoes'
+    | '/admin/conteudos'
     | '/admin/cupons'
     | '/admin/dispositivos'
     | '/admin/fontes'
     | '/admin/planos'
+    | '/admin/servidores'
     | '/admin/usuarios'
     | '/admin/vendas'
     | '/admin/'
@@ -415,6 +439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConfiguracoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/conteudos': {
+      id: '/admin/conteudos'
+      path: '/conteudos'
+      fullPath: '/admin/conteudos'
+      preLoaderRoute: typeof AdminConteudosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/cupons': {
       id: '/admin/cupons'
       path: '/cupons'
@@ -441,6 +472,13 @@ declare module '@tanstack/react-router' {
       path: '/planos'
       fullPath: '/admin/planos'
       preLoaderRoute: typeof AdminPlanosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/servidores': {
+      id: '/admin/servidores'
+      path: '/servidores'
+      fullPath: '/admin/servidores'
+      preLoaderRoute: typeof AdminServidoresRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/usuarios': {
@@ -507,10 +545,12 @@ interface AdminRouteChildren {
   AdminAuditoriaRoute: typeof AdminAuditoriaRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
+  AdminConteudosRoute: typeof AdminConteudosRoute
   AdminCuponsRoute: typeof AdminCuponsRoute
   AdminDispositivosRoute: typeof AdminDispositivosRoute
   AdminFontesRoute: typeof AdminFontesRoute
   AdminPlanosRoute: typeof AdminPlanosRoute
+  AdminServidoresRoute: typeof AdminServidoresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminVendasRoute: typeof AdminVendasRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -521,10 +561,12 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditoriaRoute: AdminAuditoriaRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
+  AdminConteudosRoute: AdminConteudosRoute,
   AdminCuponsRoute: AdminCuponsRoute,
   AdminDispositivosRoute: AdminDispositivosRoute,
   AdminFontesRoute: AdminFontesRoute,
   AdminPlanosRoute: AdminPlanosRoute,
+  AdminServidoresRoute: AdminServidoresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminVendasRoute: AdminVendasRoute,
   AdminIndexRoute: AdminIndexRoute,

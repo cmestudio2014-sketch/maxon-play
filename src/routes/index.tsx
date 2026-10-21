@@ -48,7 +48,14 @@ const features = [
 function Home() {
   return (
     <div className="min-h-screen bg-hero">
-      <SiteHeader />
+      <div className="relative">
+        <SiteHeader />
+        <div className="absolute right-4 top-4 z-50">
+          <Button asChild variant="secondary" size="sm">
+            <Link to="/admin">Admin</Link>
+          </Button>
+        </div>
+      </div>
       <main className="mx-auto max-w-6xl px-4">
         <section className="py-20 md:py-28">
           <p className="mb-4 inline-flex rounded-full border border-border bg-card/60 px-3 py-1 text-xs text-muted-foreground">
