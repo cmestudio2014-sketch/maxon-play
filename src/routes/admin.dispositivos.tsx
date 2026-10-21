@@ -15,6 +15,7 @@ import {
 import { fmtDate, fmtDateTime } from "@/components/brand";
 import {
   assignSource,
+  deleteDevice,
   forceSync,
   listDevices,
   listSources,
@@ -27,6 +28,7 @@ function Dispositivos() {
   const list = useServerFn(listDevices);
   const sources = useServerFn(listSources);
   const setStatus = useServerFn(setDeviceStatus);
+  const removeDevice = useServerFn(deleteDevice);
   const assign = useServerFn(assignSource);
   const sync = useServerFn(forceSync);
   const act = useAction();
@@ -128,6 +130,20 @@ function Dispositivos() {
                 }
               >
                 {d.status === "bloqueado" ? "Desbloquear" : "Bloquear"}
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  if (!window.confirm(`Excluir o dispositivo "${d.display_id}"? As ativações serão preservadas, mas ficarão sem dispositivo associado. Esta ação não pode ser desfeita.`)) return;
+                  void act(
+                    removeDevice({ data: { id: d.id } }),
+                    "Dispositivo excluído.",
+                    ["devices", "activations"],
+                  );
+                }}
+              >
+                Excluir
               </Button>
             </Td>
           </tr>

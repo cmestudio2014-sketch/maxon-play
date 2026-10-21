@@ -144,8 +144,8 @@ function Player() {
     ["settings", "Configurações", Settings],
   ];
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-20 shrink-0 flex-col items-center gap-2 border-r border-border bg-sidebar py-4 lg:w-56 lg:items-stretch lg:px-3">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,rgba(0,174,255,0.12),transparent_42%),linear-gradient(135deg,#070a12,#0b1020_55%,#080b12)]"><div className="flex min-h-screen">
+      <aside className="flex w-20 shrink-0 flex-col items-center gap-3 border-r border-white/10 bg-black/40 py-5 backdrop-blur-xl lg:w-56 lg:items-stretch lg:px-3">
         <div className="mb-4 px-2">
           <Logo className="hidden lg:inline-flex" />
         </div>
@@ -234,7 +234,7 @@ function Player() {
                         ? setPlaying(i)
                         : toast.info("Episódios de séries: disponível nos apps de TV.")
                     }
-                    className="tv-focus flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl border border-border bg-card p-3 text-center"
+                    className="tv-focus flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-black/90 p-4 text-center shadow-lg transition duration-300 hover:border-sky-400/60 hover:shadow-[0_0_22px_rgba(0,174,255,0.12)]"
                   >
                     {i.logo ? (
                       <img src={i.logo} alt="" loading="lazy" className="max-h-14 object-contain" />
@@ -261,6 +261,7 @@ function Player() {
           </>
         )}
       </main>
+    </div>
     </div>
   );
 }

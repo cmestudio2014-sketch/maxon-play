@@ -17,9 +17,9 @@ function parseM3U(text: string): Channel[] {
       const name = line.split(",").slice(1).join(",").trim() || "Canal sem nome";
       const group = line.match(/group-title="([^"]*)"/i)?.[1];
       const logo = line.match(/tvg-logo="([^"]*)"/i)?.[1];
-      pending = { name, group, logo };
+      pending = { name, ...(group !== undefined && { group }), ...(logo !== undefined && { logo }) };
     } else if (!line.startsWith("#")) {
-      result.push({ id: crypto.randomUUID(), name: pending.name || line, url: line, group: pending.group, logo: pending.logo });
+      result.push({ id: crypto.randomUUID(), name: pending.name || line, url: line, ...(pending.group !== undefined && { group: pending.group }), ...(pending.logo !== undefined && { logo: pending.logo }) });
       pending = { name: "" };
     }
   }
