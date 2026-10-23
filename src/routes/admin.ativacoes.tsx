@@ -25,7 +25,6 @@ import {
   useAdminQuery,
 } from "@/components/admin-ui";
 import { fmtDate } from "@/components/brand";
-import { SourceForm } from "@/components/source-form";
 import {
   assignSource,
   activateDeviceByTvCode,
@@ -205,7 +204,6 @@ function Ativacoes() {
         open={tvCodeOpen}
         customers={customers}
         plans={plans.filter((p) => p.active)}
-        sources={sources}
         onClose={() => setTvCodeOpen(false)}
         onActivate={async (d: any) => {
           const r = await act(fns.tvCode({ data: d }), "Código da TV ativado com sucesso.", ["activations", "devices"]);
@@ -218,7 +216,6 @@ function Ativacoes() {
         onClose={() => setCreating(false)}
         customers={customers}
         plans={plans}
-        sources={sources}
         onCreate={async (d) => {
           const r = await act(fns.create({ data: d }), "KEY gerada.", ["activations", "sources"]);
           if (r) {
@@ -322,11 +319,10 @@ type CreateInput = {
   start_now: boolean;
   source_id: string | null;
 };
-function TvCodeDialog({ open, customers, plans, sources, onClose, onActivate }: any) {
+function TvCodeDialog({ open, customers, plans, onClose, onActivate }: any) {
   const [code, setCode] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [planId, setPlanId] = useState("");
-  const [sourceId, setSourceId] = useState("");
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
@@ -344,11 +340,8 @@ function TvCodeDialog({ open, customers, plans, sources, onClose, onActivate }: 
           <Field label="Plano"><select className={selectCls} value={planId} onChange={(e) => setPlanId(e.target.value)}>
             <option value="">Selecione o plano</option>{plans.map((p:any) => <option key={p.id} value={p.id}>{p.name} — {p.duration_days} dias</option>)}
           </select></Field>
-          <Field label="Fonte / Lista"><select className={selectCls} value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
-            <option value="">Nenhuma / padrão</option>{sources.map((x:any) => <option key={x.id} value={x.id}>{x.name}</option>)}
-          </select></Field>
           <Button variant="hero" className="w-full" disabled={(code.length < 6 || code.length > 8) || !planId}
-            onClick={() => onActivate({ code, customer_id: customerId || null, plan_id: planId, source_id: sourceId || null })}>
+            onClick={() => onActivate({ code, customer_id: customerId || null, plan_id: planId, source_id: null })}>
             ATIVAR TV
           </Button>
         </div>
@@ -362,14 +355,12 @@ function CreateDialog({
   onClose,
   customers,
   plans,
-  sources,
   onCreate,
 }: {
   open: boolean;
   onClose: () => void;
   customers: { id: string; name: string }[];
   plans: { id: string; name: string; active: boolean }[];
-  sources: { id: string; name: string; display_hint: string }[];
   onCreate: (d: CreateInput) => Promise<void>;
 }) {
   const [f, setF] = useState<CreateInput>({
@@ -378,8 +369,6 @@ function CreateDialog({
     start_now: false,
     source_id: null,
   });
-  const [sendList, setSendList] = useState(false);
-  const [newSource, setNewSource] = useState(false);
   const planId = f.plan_id || plans.find((p) => p.active)?.id || "";
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -425,57 +414,11 @@ function CreateDialog({
             </span>
             <Switch checked={f.start_now} onCheckedChange={(v) => setF({ ...f, start_now: v })} />
           </label>
-          <label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
-            <span>
-              Enviar lista ao ativar{" "}
-              <span className="block text-xs text-muted-foreground">
-                A TV carrega a lista autorizada sozinha após a ativação.
-              </span>
-            </span>
-            <Switch
-              checked={sendList}
-              onCheckedChange={(v) => {
-                setSendList(v);
-                if (!v) setF({ ...f, source_id: null });
-              }}
-            />
-          </label>
-          {sendList &&
-            (newSource ? (
-              <div className="rounded-lg border border-border p-3">
-                <SourceForm
-                  customerId={f.customer_id}
-                  onSaved={(id) => {
-                    setF({ ...f, source_id: id });
-                    setNewSource(false);
-                  }}
-                  onCancel={() => setNewSource(false)}
-                />
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <select
-                  className={selectCls}
-                  value={f.source_id ?? ""}
-                  onChange={(e) => setF({ ...f, source_id: e.target.value || null })}
-                >
-                  <option value="">— escolha uma fonte —</option>
-                  {sources.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} · {s.display_hint}
-                    </option>
-                  ))}
-                </select>
-                <Button variant="secondary" onClick={() => setNewSource(true)}>
-                  Nova fonte
-                </Button>
-              </div>
-            ))}
           <Button
             variant="hero"
             className="w-full"
-            disabled={!planId || (sendList && !f.source_id)}
-            onClick={() => onCreate({ ...f, plan_id: planId })}
+            disabled={!planId}
+            onClick={() => onCreate({ ...f, plan_id: planId, source_id: null })}
           >
             Gerar KEY
           </Button>
